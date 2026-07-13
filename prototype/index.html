@@ -1,0 +1,956 @@
+<title>Stride — PT Recovery Prototype</title>
+<style>
+  :root{
+    --bg:#f2f6f5; --card:#fcfdfd; --card-2:#f5f8f7;
+    --ink:#101615; --ink-2:#4b5754; --muted:#84908d;
+    --line:#e0e6e4; --line-soft:#eaefed;
+    --accent:#0e7a6e; --accent-soft:#e2f0ee; --accent-ink:#0b5d54;
+    --series-1:#2a78d6; --series-2:#1baf7a;
+    --good:#0ca30c; --good-text:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    --bone:#e9e3d3; --muscle:#b25c52; --muscle-hi:#ef5844; --lig:#d03b3b;
+    --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 20px rgba(16,22,21,.06);
+    --grid:#e3e8e6; --axis:#c2cac7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0d1110; --card:#171d1c; --card-2:#1d2422;
+      --ink:#eef3f2; --ink-2:#b4bfbc; --muted:#8b9693;
+      --line:#28302e; --line-soft:#222927;
+      --accent:#37b3a2; --accent-soft:#123531; --accent-ink:#63cfc0;
+      --series-1:#3987e5; --series-2:#199e70;
+      --good-text:#3dbb3d;
+      --bone:#d8d2c2; --muscle:#b25c52; --muscle-hi:#ff6a55;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+      --grid:#242b29; --axis:#39423f;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f2f6f5; --card:#fcfdfd; --card-2:#f5f8f7;
+    --ink:#101615; --ink-2:#4b5754; --muted:#84908d;
+    --line:#e0e6e4; --line-soft:#eaefed;
+    --accent:#0e7a6e; --accent-soft:#e2f0ee; --accent-ink:#0b5d54;
+    --series-1:#2a78d6; --series-2:#1baf7a;
+    --good-text:#006300;
+    --bone:#e9e3d3; --muscle:#b25c52; --muscle-hi:#ef5844;
+    --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 20px rgba(16,22,21,.06);
+    --grid:#e3e8e6; --axis:#c2cac7;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1110; --card:#171d1c; --card-2:#1d2422;
+    --ink:#eef3f2; --ink-2:#b4bfbc; --muted:#8b9693;
+    --line:#28302e; --line-soft:#222927;
+    --accent:#37b3a2; --accent-soft:#123531; --accent-ink:#63cfc0;
+    --series-1:#3987e5; --series-2:#199e70;
+    --good-text:#3dbb3d;
+    --bone:#d8d2c2; --muscle:#b25c52; --muscle-hi:#ff6a55;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    --grid:#242b29; --axis:#39423f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  /* ---------- shell ---------- */
+  .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
+    padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:-.02em;font-size:17px}
+  .brand svg{display:block}
+  .brand .wt{font-weight:450;color:var(--muted);font-size:12px;letter-spacing:0}
+  .seg{display:flex;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;margin-left:auto}
+  .seg button{padding:6px 14px;border-radius:7px;font-weight:600;font-size:13.5px;color:var(--ink-2)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .draftpill{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent-ink);background:var(--accent-soft);padding:4px 10px;border-radius:99px;white-space:nowrap}
+  .demo-note{max-width:1160px;margin:14px auto 0;padding:0 20px;color:var(--muted);font-size:12.5px}
+  main{max-width:1160px;margin:0 auto;padding:14px 20px 80px}
+
+  /* role banner */
+  .rolebar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:14px 0 18px}
+  .rolebar h1{font-size:26px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+  .rolebar .sub{color:var(--ink-2)}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+  .tabs button{padding:9px 14px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+  .tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+  .tabs .dot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--crit);margin-left:6px;vertical-align:2px}
+
+  /* cards & grid */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 2px;font-size:15.5px;letter-spacing:-.01em}
+  .card .desc{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .stack{display:flex;flex-direction:column;gap:16px}
+
+  /* stat tiles */
+  .tile .big{font-size:30px;font-weight:750;letter-spacing:-.02em;line-height:1.1}
+  .tile .lbl{color:var(--ink-2);font-size:13px;margin-top:2px}
+  .tile .delta{font-size:12.5px;font-weight:600;margin-top:6px}
+  .delta.up{color:var(--good-text)} .delta.down{color:var(--good-text)}
+  .delta.flat{color:var(--muted)}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:9px;font-weight:650;font-size:13.5px;
+    background:var(--accent);color:#fff;border:1px solid transparent}
+  .btn:hover{filter:brightness(1.07)}
+  .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--card-2);filter:none}
+  .btn.soft{background:var(--accent-soft);color:var(--accent-ink)}
+  .btn.sm{padding:5px 11px;font-size:12.5px;border-radius:7px}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:650;border:1px solid var(--line);color:var(--ink-2);background:var(--card)}
+  .chip .sw{width:9px;height:9px;border-radius:3px}
+  .chip.status{border:none}
+  .chip.ok{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good-text)}
+  .chip.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--ink)}
+  .chip.crit{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+  .chip.btnchip{cursor:pointer}
+  .chip.btnchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* charts */
+  .chart-wrap{position:relative}
+  .chart-wrap svg{display:block;width:100%;height:auto}
+  .tt{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:8px;
+    font-size:12px;font-weight:600;white-space:nowrap;transform:translate(-50%,-130%);opacity:0;transition:opacity .12s}
+  .tt small{display:block;font-weight:500;opacity:.75}
+  .axis-t{font-size:10.5px;fill:var(--muted);font-family:system-ui,sans-serif;font-variant-numeric:tabular-nums}
+  .dlabel{font-size:11px;font-weight:700;font-family:system-ui,sans-serif}
+
+  /* check-in slider */
+  .painval{font-size:44px;font-weight:750;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .painword{font-weight:600;color:var(--ink-2);font-size:13.5px}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:14px 0 4px}
+  .scale-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:11.5px}
+
+  /* milestones */
+  .mile{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .mile:last-child{border-bottom:none}
+  .mile .ic{width:22px;height:22px;border-radius:99px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px;
+    background:var(--accent-soft);color:var(--accent-ink);font-weight:800}
+  .mile.todo .ic{background:var(--card-2);color:var(--muted);border:1px dashed var(--axis)}
+  .mile b{font-size:13.5px}
+  .mile .when{color:var(--muted);font-size:12px}
+
+  /* exercises */
+  .ex{display:grid;grid-template-columns:120px 1fr auto;gap:16px;padding:14px 0;border-bottom:1px solid var(--line-soft);align-items:center}
+  .ex:last-child{border-bottom:none}
+  @media(max-width:700px){.ex{grid-template-columns:1fr}}
+  .vid{position:relative;aspect-ratio:16/10;border-radius:10px;overflow:hidden;
+    background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 55%,#1a3a36),color-mix(in srgb,var(--series-1) 45%,#122));display:flex;align-items:center;justify-content:center}
+  .vid .play{width:34px;height:34px;border-radius:99px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
+  .vid .play::after{content:"";border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent #0b3f39;margin-left:3px}
+  .vid .tag{position:absolute;left:7px;bottom:6px;font-size:10px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.9);text-transform:uppercase}
+  .ex h4{margin:0;font-size:15px}
+  .ex .meta{color:var(--ink-2);font-size:13px;margin:2px 0 8px}
+  .ex .why{color:var(--accent-ink);font-weight:650;font-size:13px;background:none;padding:0}
+  .ex .why:hover{text-decoration:underline}
+  .exdo{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  @media(max-width:700px){.exdo{align-items:flex-start;flex-direction:row;flex-wrap:wrap}}
+  .diff{display:flex;gap:3px}
+  .diff button{width:22px;height:22px;border-radius:6px;background:var(--card-2);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--muted)}
+  .diff button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ex.done-state{opacity:.62}
+  .ex.done-state .vid::before{content:"✓ Done";position:absolute;inset:0;background:rgba(10,60,50,.72);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+
+  .ring-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+
+  /* anatomy */
+  .anat{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  @media(max-width:860px){.anat{grid-template-columns:1fr}}
+  .stage{position:relative;border-radius:14px;overflow:hidden;background:
+    radial-gradient(120% 90% at 50% 8%,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card) 70%);
+    border:1px solid var(--line)}
+  .stage canvas{display:block;width:100%;height:520px;cursor:grab;touch-action:none}
+  .stage canvas:active{cursor:grabbing}
+  .stage .hint{position:absolute;top:10px;left:12px;font-size:11.5px;color:var(--muted);background:color-mix(in srgb,var(--card) 82%,transparent);
+    padding:4px 10px;border-radius:99px;border:1px solid var(--line)}
+  .stage .legend3d{position:absolute;bottom:10px;left:12px;display:flex;gap:12px;font-size:11.5px;color:var(--ink-2)}
+  .legend3d span{display:inline-flex;align-items:center;gap:5px}
+  .legend3d i{width:10px;height:10px;border-radius:99px;display:inline-block}
+  .partinfo{border-top:1px solid var(--line-soft);margin-top:12px;padding-top:12px}
+  .partinfo h4{margin:0 0 4px;font-size:15px}
+  .partinfo p{margin:0;color:var(--ink-2);font-size:13.5px}
+  .chiprow{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 2px}
+
+  /* messages */
+  .chat{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding:4px 2px}
+  .msg{max-width:78%;padding:9px 13px;border-radius:14px;font-size:14px}
+  .msg.them{background:var(--card-2);border:1px solid var(--line);border-bottom-left-radius:4px;align-self:flex-start}
+  .msg.me{background:var(--accent);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+  .msg .who{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.65;display:block;margin-bottom:2px}
+  .chatbox{display:flex;gap:8px;margin-top:12px}
+  .chatbox input{flex:1;padding:9px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card-2);color:var(--ink);font:inherit}
+
+  /* questionnaire */
+  .q{margin-bottom:14px}
+  .q p{margin:0 0 7px;font-weight:600;font-size:13.5px}
+  .opts{display:flex;gap:5px;flex-wrap:wrap}
+  .opts button{padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--card-2);font-size:12.5px;font-weight:600;color:var(--ink-2)}
+  .opts button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .qresult{background:var(--accent-soft);border-radius:10px;padding:12px 14px;margin-top:8px;color:var(--accent-ink);font-weight:600;font-size:13.5px}
+
+  /* therapist */
+  .alertcard{display:flex;gap:12px;align-items:flex-start;border-left:4px solid var(--crit)}
+  .alertcard.w{border-left-color:var(--warn)}
+  .alertcard .ic{font-size:17px;margin-top:1px}
+  .alertcard b{font-size:14px}
+  .alertcard p{margin:2px 0 8px;color:var(--ink-2);font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle;font-variant-numeric:tabular-nums}
+  tr.rowbtn{cursor:pointer}
+  tr.rowbtn:hover td{background:var(--card-2)}
+  .pt-name{font-weight:650}
+  .pt-cond{color:var(--muted);font-size:12px}
+  .adhbar{width:84px;height:7px;border-radius:99px;background:var(--line-soft);overflow:hidden}
+  .adhbar i{display:block;height:100%;border-radius:99px;background:var(--series-1)}
+  .adh-low i{background:var(--serious)}
+  .table-scroll{overflow-x:auto}
+
+  .assign{display:flex;flex-direction:column;gap:10px}
+  select,.upload{padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card-2);color:var(--ink);font:inherit;width:100%}
+  .upload{border-style:dashed;color:var(--muted);text-align:center;cursor:pointer;font-size:13px}
+  .upload:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+  /* clinic / report */
+  .market{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#123)); color:#fff;border:none}
+  .market .eyebrow{color:rgba(255,255,255,.75)}
+  .market .big{font-size:26px;font-weight:750;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
+  .market p{color:rgba(255,255,255,.85);font-size:13.5px}
+  .market .btn{background:#fff;color:#0b5d54}
+
+  .modal-scrim{position:fixed;inset:0;background:rgba(8,12,11,.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
+  .modal-scrim.open{display:flex}
+  .modal{background:var(--card);border-radius:16px;max-width:640px;width:100%;padding:26px 30px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .report-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap}
+  .report-head h2{margin:0;font-size:19px;letter-spacing:-.01em}
+  .report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+  @media(max-width:600px){.report-grid{grid-template-columns:1fr 1fr}}
+  .rstat{background:var(--card-2);border-radius:10px;padding:10px 12px}
+  .rstat b{display:block;font-size:19px;letter-spacing:-.01em}
+  .rstat span{font-size:11.5px;color:var(--muted)}
+  .rnote{background:var(--card-2);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 10px 10px 0;font-size:13.5px;color:var(--ink-2);margin:12px 0}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);
+    padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .view{display:none}.view.on{display:block}
+  .tabpane{display:none}.tabpane.on{display:block}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="topbar">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+      <rect x="1" y="1" width="24" height="24" rx="7" fill="var(--accent)"/>
+      <path d="M4.5 15.5 L9 15.5 L11 9.5 L14 19 L16.5 12.5 L18 15.5 L21.5 15.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Stride <span class="wt">· recovery companion (working title)</span>
+  </div>
+  <span class="draftpill">Rough draft</span>
+  <div class="seg" role="tablist" aria-label="Choose a role">
+    <button class="on" data-role="patient">Patient</button>
+    <button data-role="therapist">Therapist</button>
+    <button data-role="clinic">Clinic</button>
+  </div>
+</div>
+<p class="demo-note">Interactive rough draft — every person and number here is fictional demo data. Tap everything: the three buttons above switch between what the <b>patient</b>, the <b>therapist</b>, and the <b>clinic owner</b> would each see.</p>
+
+<main>
+
+<!-- ==================== PATIENT ==================== -->
+<section class="view on" id="view-patient">
+  <div class="rolebar">
+    <h1>Good morning, Sarah</h1>
+    <span class="sub">ACL reconstruction · Week 6 of ~24 · Riverside Physical Therapy</span>
+  </div>
+  <div class="tabs" id="ptabs">
+    <button class="on" data-pane="p-dash">Dashboard</button>
+    <button data-pane="p-ex">Today's exercises</button>
+    <button data-pane="p-anat">My body in 3D</button>
+    <button data-pane="p-msg">Messages<span class="dot" id="msgdot"></span></button>
+  </div>
+
+  <!-- dashboard -->
+  <div class="tabpane on" id="p-dash">
+    <div class="grid g3" style="margin-bottom:16px">
+      <div class="card">
+        <p class="eyebrow">Daily check-in</p>
+        <h3>How's your pain right now?</h3>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:10px">
+          <span class="painval" id="painval">3</span>
+          <span class="painword" id="painword">Mild</span>
+        </div>
+        <input type="range" id="painslider" min="0" max="10" step="1" value="3" aria-label="Pain from 0 to 10">
+        <div class="scale-ends"><span>0 · no pain</span><span>10 · worst</span></div>
+        <button class="btn" id="checkinbtn" style="margin-top:12px;width:100%;justify-content:center">Save today's check-in</button>
+        <button class="btn ghost sm" id="symptombtn" style="margin-top:8px;width:100%;justify-content:center">＋ Log a new symptom</button>
+      </div>
+      <div class="card tile">
+        <p class="eyebrow">Exercise streak</p>
+        <div class="big">11 days 🔥</div>
+        <div class="lbl">You've done your home exercises 11 days in a row</div>
+        <div class="delta up">Personal best — keep it going</div>
+      </div>
+      <div class="card tile">
+        <p class="eyebrow">Knee bend (range of motion)</p>
+        <div class="big">118°</div>
+        <div class="lbl">Measured at Tuesday's appointment</div>
+        <div class="delta up">▲ 56° since surgery — next goal: 125°</div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <h3>Your pain is trending down</h3>
+        <p class="desc">Daily check-ins over the last 6 weeks · flags mark your milestones</p>
+        <div class="chart-wrap" id="painchart"></div>
+      </div>
+      <div class="card">
+        <h3>Knee bend, week by week</h3>
+        <p class="desc">Measured by James at each appointment · goal for full recovery: 135°</p>
+        <div class="chart-wrap" id="romchart"></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Milestones</h3>
+        <p class="desc">The road from surgery to running again</p>
+        <div id="milestones"></div>
+      </div>
+      <div class="card">
+        <h3>Bi-weekly check questionnaire</h3>
+        <p class="desc">Standard questions your insurance and physician recognize (knee outcome survey)</p>
+        <div id="quiz"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- exercises -->
+  <div class="tabpane" id="p-ex">
+    <div class="card" style="margin-bottom:16px">
+      <div class="ring-row">
+        <div class="chart-wrap" id="adhring" style="width:92px;flex:none"></div>
+        <div>
+          <h3 style="margin-bottom:2px">Today's plan from James, your PT</h3>
+          <p class="desc" style="margin:0">4 exercises · about 25 minutes · videos recorded by your therapist.<br>Mark each one done or skipped, and say how hard it felt — James sees this instantly.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card"><div id="exlist"></div></div>
+  </div>
+
+  <!-- anatomy -->
+  <div class="tabpane" id="p-anat">
+    <div class="anat">
+      <div class="stage">
+        <canvas id="knee3d" aria-label="Interactive 3D model of your knee"></canvas>
+        <span class="hint">Drag to rotate · tap a muscle to learn about it</span>
+        <div class="legend3d">
+          <span><i style="background:var(--bone)"></i>Bone</span>
+          <span><i style="background:var(--muscle)"></i>Muscle</span>
+          <span><i style="background:var(--muscle-hi)"></i>Worked by selected exercise</span>
+        </div>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Understand your recovery</p>
+        <h3>Your right knee</h3>
+        <p class="desc" style="margin-bottom:4px">Pick an exercise to see exactly which muscles it strengthens — and why that rebuilds your knee.</p>
+        <div class="chiprow" id="exchips"></div>
+        <div class="partinfo" id="partinfo">
+          <h4>Explore your knee</h4>
+          <p>Rotate the model and tap any part — every muscle, bone and ligament has a plain-language explanation. Or choose an exercise above to see what it's working on.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- messages -->
+  <div class="tabpane" id="p-msg">
+    <div class="card" style="max-width:640px">
+      <h3>James Okafor, PT, DPT</h3>
+      <p class="desc">Secure messages — never email or texts, so your health details stay protected</p>
+      <div class="chat" id="chat"></div>
+      <div class="chatbox">
+        <input id="chatinput" placeholder="Write a message…" aria-label="Write a message">
+        <button class="btn" id="chatsend">Send</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== THERAPIST ==================== -->
+<section class="view" id="view-therapist">
+  <div class="rolebar">
+    <h1>Morning, James</h1>
+    <span class="sub">18 active patients · 2 need your attention</span>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card alertcard">
+      <span class="ic">⚠️</span>
+      <div>
+        <b>Marcus Webb — pain rising fast</b>
+        <p>Pain up 2.1 points over the last 3 days (now 6.8/10) after his new band exercises. Logged “sharp pain when reaching overhead” yesterday.</p>
+        <button class="btn sm soft" data-toast="In the full app this opens Marcus's chart with the message thread ready.">Review &amp; message Marcus</button>
+      </div>
+    </div>
+    <div class="card alertcard w">
+      <span class="ic">⏸️</span>
+      <div>
+        <b>Linda Tran — 5 days of missed exercises</b>
+        <p>Adherence dropped from 74% to 41% in two weeks. Last check-in noted “too sore after gardening.” Next appointment: Thursday.</p>
+        <button class="btn sm soft" data-toast="In the full app this sends Linda a gentle, pre-written nudge with one tap.">Send a check-in nudge</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3>Your patients</h3>
+    <p class="desc">Sorted by who needs attention · tap Sarah's row to open her full chart</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Patient</th><th>Week</th><th>Pain trend (6 wks)</th><th>Pain now</th><th>Adherence</th><th>Status</th></tr></thead>
+      <tbody id="roster"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="grid g2" id="sarahdetail">
+    <div class="stack">
+      <div class="card">
+        <h3>Sarah Mitchell — chart</h3>
+        <p class="desc">ACL reconstruction (right) · surgery May 31 · week 6 · referred by Dr. Anita Patel</p>
+        <div class="chart-wrap" id="tpainchart"></div>
+      </div>
+      <div class="card">
+        <h3>Measurements you've logged</h3>
+        <div class="table-scroll">
+        <table>
+          <thead><tr><th>Date</th><th>Knee bend</th><th>Quad strength</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Jun 06</td><td>62°</td><td>2/5</td><td>Post-op baseline</td></tr>
+            <tr><td>Jun 20</td><td>85°</td><td>3/5</td><td>Swelling down</td></tr>
+            <tr><td>Jul 01</td><td>104°</td><td>3+/5</td><td>Off crutches</td></tr>
+            <tr><td>Jul 10</td><td>118°</td><td>4/5</td><td>Started balance work</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Assign a home exercise</h3>
+        <p class="desc">Pick from your library or record a new demo video for Sarah</p>
+        <div class="assign">
+          <select id="exselect" aria-label="Choose an exercise">
+            <option>Single-leg balance — 3 × 30 sec</option>
+            <option>Step-downs — 3 × 8</option>
+            <option>Stationary bike — 10 min</option>
+            <option>Wall sits — 3 × 20 sec</option>
+          </select>
+          <button class="upload" data-toast="In the full app you'd record or upload a video here — it appears in Sarah's plan instantly.">📹 &nbsp;Record / upload your demo video</button>
+          <div><span class="chip"><span class="sw" style="background:var(--muscle-hi)"></span>Targets: quadriceps, glutes</span></div>
+          <button class="btn" data-toast="Assigned. Sarah will see it in tomorrow's plan with your video.">Assign to Sarah's plan</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Share progress</h3>
+        <p class="desc">One tap builds a report for the referring physician or for insurance</p>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button class="btn soft" id="reportbtn">📄 Preview progress report</button>
+          <button class="btn ghost" data-toast="In the full app this exports the visit history and outcomes in insurance-ready format.">Export for insurance</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CLINIC ==================== -->
+<section class="view" id="view-clinic">
+  <div class="rolebar">
+    <h1>Riverside Physical Therapy</h1>
+    <span class="sub">Clinic overview · last 6 months</span>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card tile"><p class="eyebrow">Active patients</p><div class="big">132</div><div class="delta up">▲ 12 vs last quarter</div></div>
+    <div class="card tile"><p class="eyebrow">Avg pain reduction</p><div class="big">58%</div><div class="lbl">intake → discharge</div><div class="delta up">▲ 6 pts vs last year</div></div>
+    <div class="card tile"><p class="eyebrow">Home-exercise adherence</p><div class="big">79%</div><div class="lbl">clinic-wide average</div><div class="delta up">▲ steadily improving</div></div>
+    <div class="card tile"><p class="eyebrow">Avg episode length</p><div class="big">11.4 wks</div><div class="lbl">regional average: 13.9</div><div class="delta up">2.5 weeks faster</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <h3>Average recovery time by condition</h3>
+      <p class="desc">Weeks from intake to discharge · your clinic vs regional average</p>
+      <div class="chart-wrap" id="condchart"></div>
+    </div>
+    <div class="card">
+      <h3>Adherence keeps climbing</h3>
+      <p class="desc">Clinic-wide home-exercise completion since launching patient tracking</p>
+      <div class="chart-wrap" id="adhchart"></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card market">
+      <p class="eyebrow">Marketing-ready numbers</p>
+      <div class="big">“Our patients recover 2.5 weeks faster than the regional average.”</div>
+      <p>Every stat is aggregate and anonymous — no patient data — so it's safe to put on your website, referral letters and social media.</p>
+      <button class="btn" data-toast="In the full app this exports a branded one-pager with your outcome stats.">Export marketing one-pager</button>
+    </div>
+    <div class="card">
+      <h3>Referring physicians</h3>
+      <p class="desc">Progress reports keep referrers in the loop — and referrals coming</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Physician</th><th>Referrals</th><th>Reports sent</th></tr></thead>
+        <tbody>
+          <tr><td>Dr. Anita Patel — Orthopedics</td><td>23</td><td>41</td></tr>
+          <tr><td>Dr. Sam Reyes — Sports Med</td><td>17</td><td>28</td></tr>
+          <tr><td>Dr. Grace Liu — Family Med</td><td>11</td><td>15</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <button class="btn ghost sm" id="reportbtn2" style="margin-top:10px">See what a physician report looks like</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- report modal -->
+<div class="modal-scrim" id="scrim">
+  <div class="modal" role="dialog" aria-label="Progress report preview">
+    <div class="report-head">
+      <div>
+        <h2>Progress Report</h2>
+        <span style="color:var(--muted);font-size:12.5px">Riverside Physical Therapy · July 13, 2026</span>
+      </div>
+      <div style="text-align:right;font-size:12.5px;color:var(--ink-2)">
+        <b>Sarah Mitchell</b> · DOB 03/14/1992<br>
+        To: Dr. Anita Patel, Orthopedics
+      </div>
+    </div>
+    <p style="font-size:13.5px;color:var(--ink-2);margin:0">
+      <b style="color:var(--ink)">Diagnosis:</b> Status post ACL reconstruction, right knee (May 31, 2026) ·
+      <b style="color:var(--ink)">Visits:</b> 12 of 24 planned · <b style="color:var(--ink)">Week 6</b>
+    </p>
+    <div class="report-grid">
+      <div class="rstat"><b>7.8 → 3.1</b><span>Avg pain (0–10)</span></div>
+      <div class="rstat"><b>62° → 118°</b><span>Knee flexion</span></div>
+      <div class="rstat"><b>2/5 → 4/5</b><span>Quad strength</span></div>
+      <div class="rstat"><b>92%</b><span>Home-exercise adherence</span></div>
+    </div>
+    <div class="chart-wrap" id="reportchart"></div>
+    <div class="rnote">
+      <b>Therapist note:</b> Sarah is ahead of protocol. Full weight-bearing without crutches since week 4; began proprioceptive/balance work this week. Knee outcome survey up 18 points since intake. No signs of graft irritation. Anticipate return-to-running assessment at week 12.
+    </div>
+    <p style="font-size:12.5px;color:var(--muted)">Signed electronically · James Okafor, PT, DPT · License #PT-48211</p>
+    <div class="actions">
+      <button class="btn ghost" id="closemodal">Close</button>
+      <button class="btn ghost" data-toast="Prototype note: the real app generates a signed PDF here.">Download PDF</button>
+      <button class="btn" data-toast="Sent securely to Dr. Patel's inbox (in the real app!).">Send to Dr. Patel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-toast]");if(b)toast(b.dataset.toast)});
+const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= demo data ================= */
+const painData=[];for(let d=0;d<42;d++){let v=8.1-d*0.117+Math.sin(d*0.9)*0.55+Math.sin(d*2.63)*0.35;if(d>38)v-=0.15;painData.push(Math.max(1.5,Math.min(9,Math.round(v*10)/10)))}
+const painMilestones=[{i:9,label:"90° bend"},{i:23,label:"Crutches off"},{i:38,label:"11-day streak"}];
+const romData=[62,74,85,95,104,112,118];
+const adhClinic=[64,68,71,74,76,79];
+const conditions=[{name:"Lumbar strain",us:7.5,reg:9},{name:"Rotator cuff",us:14,reg:16.5},{name:"Knee replacement",us:13,reg:15.5},{name:"Achilles repair",us:19,reg:21},{name:"ACL reconstruction",us:22,reg:25}];
+const roster=[
+ {n:"Marcus Webb",c:"Rotator cuff repair",w:3,pain:6.8,adh:74,trend:[5.2,5.5,5.0,4.8,4.7,6.8],st:"crit",stTxt:"Pain rising"},
+ {n:"Linda Tran",c:"Total knee replacement",w:9,pain:4.2,adh:41,trend:[6.5,6.0,5.4,4.9,4.4,4.2],st:"warn",stTxt:"Low adherence"},
+ {n:"Sarah Mitchell",c:"ACL reconstruction",w:6,pain:3.1,adh:92,trend:[7.8,7.0,6.1,5.2,4.1,3.1],st:"ok",stTxt:"On track",click:true},
+ {n:"Devon Price",c:"Lumbar strain",w:2,pain:5.5,adh:88,trend:[7.2,6.9,6.5,6.2,5.8,5.5],st:"ok",stTxt:"On track"},
+ {n:"Robert Chen",c:"Hip replacement",w:7,pain:3.8,adh:81,trend:[6.8,6.1,5.5,4.9,4.2,3.8],st:"ok",stTxt:"On track"},
+ {n:"Aisha Karim",c:"Achilles repair",w:12,pain:2.0,adh:95,trend:[5.0,4.4,3.8,3.1,2.5,2.0],st:"ok",stTxt:"Discharge soon"}];
+const milestones=[
+ {t:"Surgery — ACL reconstruction",w:"May 31",done:true},
+ {t:"Bend knee to 90°",w:"Week 2 · Jun 13",done:true},
+ {t:"Walk without crutches",w:"Week 4 · Jun 27",done:true},
+ {t:"Bend knee to 120°",w:"Almost there — 118° now",done:false,next:true},
+ {t:"Jog on a treadmill",w:"Expected around week 12",done:false},
+ {t:"Return to soccer",w:"Expected around week 24",done:false}];
+const exercises=[
+ {id:"quad",name:"Quad sets",meta:"3 sets × 10 · hold 5 sec",muscles:["quads"],why:"Your quadriceps switched off after surgery to protect the knee. This wakes it back up — it's the muscle that keeps your kneecap tracking straight and your new ligament protected."},
+ {id:"slr",name:"Straight-leg raises",meta:"3 sets × 12",muscles:["quads","hipflex"],why:"Builds quad and hip-flexor strength without bending the knee, so you gain protection for the new ACL with zero strain on it."},
+ {id:"ham",name:"Hamstring curls",meta:"3 sets × 10 each leg",muscles:["hams"],why:"Your hamstrings are the ACL's best friend — they pull the shin backward, directly taking load off the reconstructed ligament with every step."},
+ {id:"heel",name:"Heel raises",meta:"3 sets × 15",muscles:["calf"],why:"Your calf stabilizes the knee from below and powers push-off. Strong calves mean a steadier landing when you get back to jogging."}];
+const chatLog=[
+ {who:"James (your PT)",me:false,txt:"Great week, Sarah — your pain trend looks excellent and 118° of bend is ahead of schedule. 🎉"},
+ {who:"James (your PT)",me:false,txt:"I noticed you rated hamstring curls 4/5 difficulty twice. Want me to drop them to 2 sets for a few days?"},
+ {who:"You",me:true,txt:"Yes please! They burn a lot by set 3."},
+ {who:"James (your PT)",me:false,txt:"Done — updated your plan. Also added a short video showing an easier setup. Check today's exercises 👍"}];
+
+/* ================= tiny chart library (inline SVG) ================= */
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function lineChart(el,data,opts){
+  const o=Object.assign({w:460,h:220,min:0,max:10,color:"--series-1",unit:"",labels:null,area:true,marks:[],goal:null,points:false,xlab:i=>i},opts||{});
+  const steps=4,tickTxt=[];
+  for(let g=0;g<=steps;g++)tickTxt.push(Math.round(o.min+(o.max-o.min)*g/steps)+(o.unit||""));
+  const padL=13+Math.max(...tickTxt.map(t=>t.length))*6.6;
+  const P={l:padL,r:14,t:14,b:24},W=o.w,H=o.h,iw=W-P.l-P.r,ih=H-P.t-P.b;
+  const X=i=>P.l+i/(data.length-1)*iw, Y=v=>P.t+(1-(v-o.min)/(o.max-o.min))*ih;
+  let grid="",yt="";
+  for(let g=0;g<=steps;g++){const v=o.min+(o.max-o.min)*g/steps,y=Y(v);
+    grid+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+    yt+=`<text class="axis-t" x="${P.l-7}" y="${y+3.5}" text-anchor="end">${tickTxt[g]}</text>`}
+  let path="",apath=`M ${X(0)} ${Y(data[0])}`;
+  data.forEach((v,i)=>{path+=(i?" L ":"M ")+X(i).toFixed(1)+" "+Y(v).toFixed(1);if(i)apath+=` L ${X(i).toFixed(1)} ${Y(v).toFixed(1)}`});
+  apath+=` L ${X(data.length-1)} ${Y(o.min)} L ${X(0)} ${Y(o.min)} Z`;
+  let marks="";
+  o.marks.forEach(m=>{const x=X(m.i);marks+=`<line x1="${x}" x2="${x}" y1="${P.t}" y2="${H-P.b}" stroke="var(--axis)" stroke-dasharray="3 3"/>
+   <text class="axis-t" x="${x}" y="${P.t-3}" text-anchor="middle" style="font-weight:700;fill:var(--ink-2)">${m.label}</text>`});
+  let goal="";
+  if(o.goal)goal=`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(o.goal.v)}" y2="${Y(o.goal.v)}" stroke="var(--axis)" stroke-dasharray="5 4"/><text class="axis-t" x="${W-P.r}" y="${Y(o.goal.v)-5}" text-anchor="end" style="fill:var(--ink-2);font-weight:700">${o.goal.label}</text>`;
+  let pts="";
+  if(o.points)data.forEach((v,i)=>{pts+=`<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="var(${o.color})" stroke="var(--card)" stroke-width="2"/>`});
+  const last=data[data.length-1];
+  const end=`<circle cx="${X(data.length-1)}" cy="${Y(last)}" r="4.5" fill="var(${o.color})" stroke="var(--card)" stroke-width="2"/>
+    <text class="dlabel" x="${X(data.length-1)-8}" y="${Y(last)-10}" text-anchor="end" fill="var(--ink)">${last}${o.unit}</text>`;
+  let xl="";
+  if(o.xlabels)o.xlabels.forEach((t,k)=>{const i=k*(data.length-1)/(o.xlabels.length-1);xl+=`<text class="axis-t" x="${X(i)}" y="${H-6}" text-anchor="middle">${t}</text>`});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="chart">
+    ${grid}${goal}
+    ${o.area?`<path d="${apath}" fill="var(${o.color})" opacity="0.09"/>`:""}
+    <path d="${path}" fill="none" stroke="var(${o.color})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${marks}${pts}${end}${yt}${xl}
+    <line id="xh" x1="0" x2="0" y1="${P.t}" y2="${H-P.b}" stroke="var(--axis)" opacity="0"/>
+    <circle id="hp" r="4.5" fill="var(${o.color})" stroke="var(--card)" stroke-width="2" opacity="0"/>
+    <rect x="${P.l}" y="${P.t}" width="${iw}" height="${ih}" fill="transparent" style="cursor:crosshair"/>
+  </svg><div class="tt"></div>`;
+  const svg=el.querySelector("svg"),tt=el.querySelector(".tt"),xh=el.querySelector("#xh"),hp=el.querySelector("#hp"),ov=el.querySelector("rect:last-of-type");
+  function move(ev){
+    const r=svg.getBoundingClientRect(),mx=(ev.clientX-r.left)/r.width*W;
+    const i=Math.max(0,Math.min(data.length-1,Math.round((mx-P.l)/iw*(data.length-1))));
+    const x=X(i),y=Y(data[i]);
+    xh.setAttribute("x1",x);xh.setAttribute("x2",x);xh.setAttribute("opacity",.7);
+    hp.setAttribute("cx",x);hp.setAttribute("cy",y);hp.setAttribute("opacity",1);
+    tt.style.left=(x/W*100)+"%";tt.style.top=(y/H*100)+"%";tt.style.opacity=1;
+    tt.innerHTML=`${data[i]}${o.unit||""} <small>${o.xlab(i)}</small>`;
+  }
+  ov.addEventListener("mousemove",move);
+  ov.addEventListener("mouseleave",()=>{tt.style.opacity=0;xh.setAttribute("opacity",0);hp.setAttribute("opacity",0)});
+}
+function sparkline(data,color){
+  const W=110,H=30,mn=Math.min(...data),mx=Math.max(...data);
+  const X=i=>4+i/(data.length-1)*(W-8),Y=v=>4+(1-(v-mn)/(mx-mn||1))*(H-8);
+  let p="";data.forEach((v,i)=>p+=(i?" L ":"M ")+X(i).toFixed(1)+" "+Y(v).toFixed(1));
+  const lx=X(data.length-1),ly=Y(data[data.length-1]);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${p}" fill="none" stroke="var(${color})" stroke-width="1.8"/><circle cx="${lx}" cy="${ly}" r="3" fill="var(${color})"/></svg>`;
+}
+function barsH(el,items){
+  const W=460,rowH=44,P={l:128,r:44,t:6},H=P.t+items.length*rowH+18;
+  let out="";
+  const mx=Math.max(...items.map(i=>i.reg))*1.08;
+  items.forEach((it,k)=>{
+    const y=P.t+k*rowH, bw=v=>(v/mx)*(W-P.l-P.r);
+    out+=`<text class="axis-t" x="${P.l-10}" y="${y+18}" text-anchor="end" style="fill:var(--ink-2);font-weight:600">${it.name}</text>
+      <rect x="${P.l}" y="${y+4}" width="${bw(it.us)}" height="13" rx="4" fill="var(--series-1)"/>
+      <text class="dlabel" x="${P.l+bw(it.us)+6}" y="${y+15}" fill="var(--ink)">${it.us}w</text>
+      <rect x="${P.l}" y="${y+21}" width="${bw(it.reg)}" height="13" rx="4" fill="var(--axis)" opacity=".75"/>
+      <text class="axis-t" x="${P.l+bw(it.reg)+6}" y="${y+31.5}">${it.reg}w</text>`;
+  });
+  const ly=P.t+items.length*rowH+6;
+  out+=`<rect x="${P.l}" y="${ly}" width="10" height="10" rx="3" fill="var(--series-1)"/><text class="axis-t" x="${P.l+15}" y="${ly+9}" style="fill:var(--ink-2)">Your clinic</text>
+        <rect x="${P.l+92}" y="${ly}" width="10" height="10" rx="3" fill="var(--axis)"/><text class="axis-t" x="${P.l+107}" y="${ly+9}" style="fill:var(--ink-2)">Regional average</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recovery weeks by condition">${out}</svg>`;
+}
+function ring(el,pct){
+  const R=34,C=2*Math.PI*R;
+  el.innerHTML=`<svg viewBox="0 0 92 92" role="img" aria-label="Adherence ${pct} percent">
+    <circle cx="46" cy="46" r="${R}" fill="none" stroke="var(--line-soft)" stroke-width="9"/>
+    <circle cx="46" cy="46" r="${R}" fill="none" stroke="var(--series-2)" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}" transform="rotate(-90 46 46)"/>
+    <text x="46" y="44" text-anchor="middle" style="font:750 19px system-ui;fill:var(--ink)">${pct}%</text>
+    <text x="46" y="60" text-anchor="middle" class="axis-t">this week</text></svg>`;
+}
+
+/* ================= render: patient dashboard ================= */
+const day0=new Date(2026,5,1);
+const dayLabel=i=>{const d=new Date(day0);d.setDate(d.getDate()+i);return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})};
+function drawPain(){lineChart($("#painchart"),painData,{min:0,max:10,color:"--series-1",marks:painMilestones,xlab:dayLabel,xlabels:["Jun 1","Jun 15","Jun 29","Jul 13"]})}
+drawPain();
+lineChart($("#romchart"),romData,{min:0,max:140,unit:"°",color:"--series-2",points:true,goal:{v:135,label:"full recovery 135°"},xlab:i=>"Week "+(i+1),xlabels:["Wk 1","Wk 3","Wk 5","Wk 7"]});
+$("#milestones").innerHTML=milestones.map(m=>`
+  <div class="mile ${m.done?"":"todo"}">
+    <span class="ic">${m.done?"✓":m.next?"→":"·"}</span>
+    <div><b>${m.t}</b><div class="when">${m.w}</div></div>
+  </div>`).join("");
+
+/* pain slider + check-in */
+const painWords=["No pain","Barely there","Mild","Mild","Moderate","Moderate","Strong","Strong","Severe","Very severe","Worst possible"];
+$("#painslider").addEventListener("input",e=>{$("#painval").textContent=e.target.value;$("#painword").textContent=painWords[e.target.value]});
+$("#checkinbtn").addEventListener("click",()=>{
+  painData.push(+$("#painslider").value);painData.shift();drawPain();
+  toast("Check-in saved — added to your progress graph ✓");
+});
+$("#symptombtn").addEventListener("click",()=>toast("In the full app: describe a new or changed symptom — your therapist is alerted if it's concerning."));
+
+/* quiz */
+const quizQs=[
+ {q:"How much does your knee affect walking a few blocks?",opts:["Not at all","A little","Moderately","A lot","Can't do it"]},
+ {q:"How often do you notice knee pain during the day?",opts:["Never","Rarely","Sometimes","Often","Constant"]},
+ {q:"How confident are you in your knee on stairs?",opts:["Fully","Mostly","Somewhat","A little","Not at all"]}];
+$("#quiz").innerHTML=quizQs.map((x,i)=>`<div class="q"><p>${i+1}. ${x.q}</p><div class="opts" data-q="${i}">${x.opts.map((o,j)=>`<button data-v="${j}">${o}</button>`).join("")}</div></div>`).join("")+`<button class="btn" id="quizbtn">Submit questionnaire</button><div id="quizout"></div>`;
+$("#quiz").addEventListener("click",e=>{
+  const b=e.target.closest(".opts button");
+  if(b){[...b.parentElement.children].forEach(x=>x.classList.remove("on"));b.classList.add("on");return}
+  if(e.target.id==="quizbtn"){
+    const done=$$("#quiz .opts").every?0:0;
+    const picked=$$("#quiz .opts .on").length;
+    if(picked<3){toast("Answer all 3 questions first 🙂");return}
+    $("#quizout").innerHTML=`<div class="qresult">Your knee function score: <b>61 / 100</b> — up 18 points since intake. This score goes on your chart and into reports for Dr. Patel.</div>`;
+  }
+});
+
+/* ================= render: exercises ================= */
+ring($("#adhring"),92);
+function renderEx(){
+  $("#exlist").innerHTML=exercises.map(x=>`
+   <div class="ex ${x.state==="done"?"done-state":""}" data-id="${x.id}">
+     <button class="vid" data-toast="In the full app this plays the demo video your therapist recorded for you.">
+       <span class="play"></span><span class="tag">▸ 0:42 · by James</span>
+     </button>
+     <div>
+       <h4>${x.name}</h4>
+       <div class="meta">${x.meta}</div>
+       <button class="why" data-ex="${x.id}">See what this strengthens on your 3D knee →</button>
+     </div>
+     <div class="exdo">
+       <div style="display:flex;gap:8px">
+         <button class="btn sm ${x.state==="done"?"":"soft"}" data-act="done">${x.state==="done"?"✓ Done":"Mark done"}</button>
+         <button class="btn ghost sm" data-act="skip">${x.state==="skip"?"Skipped":"Skip"}</button>
+       </div>
+       <div style="display:flex;align-items:center;gap:7px">
+         <span style="font-size:11.5px;color:var(--muted)">How hard?</span>
+         <div class="diff">${[1,2,3,4,5].map(n=>`<button data-d="${n}" class="${x.diff===n?"on":""}">${n}</button>`).join("")}</div>
+       </div>
+     </div>
+   </div>`).join("");
+}
+renderEx();
+$("#exlist").addEventListener("click",e=>{
+  const row=e.target.closest(".ex");if(!row)return;
+  const x=exercises.find(z=>z.id===row.dataset.id);
+  const act=e.target.closest("[data-act]"),d=e.target.closest("[data-d]"),why=e.target.closest(".why");
+  if(act){x.state=act.dataset.act;renderEx();toast(act.dataset.act==="done"?"Nice! Logged — James can see it instantly.":"Skipped — no judgment. James may adjust your plan.");return}
+  if(d){x.diff=+d.dataset.d;renderEx();toast(`Difficulty ${x.diff}/5 logged for ${x.name}`);return}
+  if(why){openAnatomy(x.id)}
+});
+
+/* ================= 3D knee (hand-rolled canvas engine) ================= */
+const canvas=$("#knee3d"),ctx=canvas.getContext("2d");
+function capsule(x1,y1,z1,x2,y2,z2,r1,r2,n){
+  const s=[];for(let i=0;i<n;i++){const t=i/(n-1);
+    s.push({x:x1+(x2-x1)*t,y:y1+(y2-y1)*t,z:z1+(z2-z1)*t,r:r1+(r2-r1)*t})}return s}
+const parts=[
+ {id:"femur",name:"Femur (thigh bone)",kind:"bone",info:"The longest bone in your body. Its rounded end forms the top half of your knee joint.",
+  s:[...capsule(0,215,0,0,40,0,24,30,22),{x:-14,y:26,z:2,r:22},{x:15,y:26,z:2,r:22}]},
+ {id:"tibia",name:"Tibia (shin bone)",kind:"bone",info:"Your main shin bone — it carries your body weight and anchors your new ACL graft at the bottom.",
+  s:[{x:0,y:-14,z:0,r:26},...capsule(0,-30,0,-4,-215,0,20,16,22)]},
+ {id:"fibula",name:"Fibula",kind:"bone",info:"The thin bone beside your shin. Muscles that steady your ankle attach here.",
+  s:capsule(24,-32,-10,22,-210,-8,7,6,18)},
+ {id:"patella",name:"Patella (kneecap)",kind:"bone",info:"A shield-shaped bone inside your quad tendon. Strong quads keep it gliding in its groove — weak quads let it drift and ache.",
+  s:[{x:0,y:8,z:33,r:15},{x:0,y:-2,z:31,r:11}]},
+ {id:"acl",name:"Your reconstructed ACL",kind:"lig",info:"The ligament that was rebuilt in your surgery. It stops your shin sliding forward. Every exercise in your plan is designed to protect it while it heals — hamstrings shield it, quads and calf stabilize around it.",
+  s:capsule(-2,16,10,4,-8,4,6,6,8)},
+ {id:"quads",name:"Quadriceps",kind:"muscle",info:"The big four-part muscle on the front of your thigh. It straightens the knee and keeps your kneecap tracking straight. It 'switches off' after ACL surgery — waking it up is priority #1.",
+  s:[...capsule(0,205,26,0,60,34,26,17,20),...capsule(-16,190,20,-10,70,26,15,10,15),...capsule(17,190,20,11,70,26,15,10,15)]},
+ {id:"hams",name:"Hamstrings",kind:"muscle",info:"The muscles on the back of your thigh. They bend the knee and pull your shin backward — directly protecting your new ACL. Your surgeon may even have used part of one for the graft.",
+  s:[...capsule(-12,200,-26,-14,45,-22,16,10,18),...capsule(13,200,-26,15,45,-22,16,10,18)]},
+ {id:"hipflex",name:"Hip flexors",kind:"muscle",info:"Muscles at the very top of your thigh that lift your leg forward — the motion of every step and stair.",
+  s:capsule(4,225,18,10,175,24,14,12,10)},
+ {id:"calf",name:"Calf (gastrocnemius)",kind:"muscle",info:"Crosses behind your knee and powers push-off when you walk. A strong calf makes landings softer and steadier for the healing knee.",
+  s:[...capsule(-8,-45,-22,-6,-140,-18,15,8,16),...capsule(11,-45,-22,9,-140,-18,14,8,16)]},
+ {id:"tibant",name:"Tibialis anterior",kind:"muscle",info:"The muscle along the front of your shin — it lifts your foot so your toes clear the ground with each step.",
+  s:capsule(8,-50,14,6,-160,12,10,6,14)}
+];
+let yaw=0.6,pitch=0.12,autoSpin=!reduceMotion,highlight=[],selected=null,exActive=null;
+function colorOf(p){
+  if(p.kind==="bone")return css("--bone");
+  if(p.kind==="lig")return css("--lig");
+  return highlight.includes(p.id)?css("--muscle-hi"):css("--muscle");
+}
+let projected=[];
+function draw(){
+  const dpr=devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;
+  if(canvas.width!==w*dpr){canvas.width=w*dpr;canvas.height=h*dpr}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const scale=h/520*1.1,f=900;projected=[];
+  const all=[];
+  parts.forEach(p=>{
+    const dim=highlight.length&&p.kind==="muscle"&&!highlight.includes(p.id);
+    p.s.forEach(s=>{
+      let x=s.x*cy+s.z*sy, z=-s.x*sy+s.z*cy, y=s.y;
+      let y2=y*cp-z*sp, z2=y*sp+z*cp;
+      const per=f/(f-z2);
+      all.push({p,px:w/2+x*per*scale,py:h/2-y2*per*scale+10,pr:s.r*per*scale,z:z2,dim});
+    });
+  });
+  all.sort((a,b)=>a.z-b.z);
+  all.forEach(s=>{
+    const c=colorOf(s.p),hi=highlight.includes(s.p.id)||(selected===s.p.id);
+    ctx.globalAlpha=s.dim?0.22:(s.p.kind==="bone"?0.96:1);
+    const g=ctx.createRadialGradient(s.px-s.pr*0.35,s.py-s.pr*0.4,s.pr*0.1,s.px,s.py,s.pr);
+    g.addColorStop(0,shade(c,hi?30:22));g.addColorStop(1,shade(c,hi?-8:-26));
+    ctx.shadowColor=hi?c:"transparent";ctx.shadowBlur=hi?18:0;
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.px,s.py,s.pr,0,7);ctx.fill();
+    ctx.shadowBlur=0;
+    projected.push(s);
+  });
+  ctx.globalAlpha=1;
+  // label for selected / highlighted
+  const labelIds=selected?[selected]:highlight;
+  labelIds.forEach(id=>{
+    const p=parts.find(z=>z.id===id);if(!p)return;
+    const sps=projected.filter(s=>s.p===p);if(!sps.length)return;
+    const top=sps.reduce((a,b)=>a.py<b.py?a:b);
+    ctx.font="700 12px system-ui";ctx.textAlign="center";
+    const tw=ctx.measureText(p.name).width;
+    const lx=Math.max(tw/2+10,Math.min(w-tw/2-10,top.px));
+    const ly=Math.max(44,top.py-top.pr-30);
+    ctx.fillStyle=css("--card");ctx.strokeStyle=css("--line");
+    roundRect(lx-tw/2-8,ly,tw+16,20,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle=css("--ink");ctx.fillText(p.name,lx,ly+14);
+  });
+  if(autoSpin)yaw+=0.0045;
+  requestAnimationFrame(draw);
+}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function shade(hex,amt){
+  hex=hex.replace("#","");if(hex.length===3)hex=hex.split("").map(c=>c+c).join("");
+  const n=parseInt(hex,16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return `rgb(${r},${g},${b})`}
+requestAnimationFrame(draw);
+/* drag / tap */
+let drag=null;
+canvas.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(Math.abs(dx)+Math.abs(dy)>3){drag.moved=true;autoSpin=false}
+  yaw+=dx*0.008;pitch=Math.max(-0.6,Math.min(0.6,pitch+dy*0.005));
+  drag.x=e.clientX;drag.y=e.clientY;
+});
+canvas.addEventListener("pointerup",e=>{
+  if(drag&&!drag.moved){
+    const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    let hit=null;
+    for(let i=projected.length-1;i>=0;i--){const s=projected[i];
+      if(!s.dim&&Math.hypot(mx-s.px,my-s.py)<=s.pr){hit=s.p;break}}
+    if(hit){selected=hit.id;exActive=null;highlight=[];syncChips();
+      showPart(hit.name,hit.info,hit.kind)}
+  }
+  drag=null;
+});
+function showPart(name,info,kind){
+  const tag=kind==="lig"?`<span class="chip crit status" style="margin-bottom:6px">Your injury — now healing</span><br>`:"";
+  $("#partinfo").innerHTML=`${tag}<h4>${name}</h4><p>${info}</p>`;
+}
+/* exercise chips over the model */
+function syncChips(){
+  $("#exchips").innerHTML=
+    exercises.map(x=>`<button class="chip btnchip ${exActive===x.id?"on":""}" data-ex="${x.id}">${x.name}</button>`).join("")+
+    `<button class="chip btnchip ${exActive==="acl"?"on":""}" data-ex="acl" style="border-color:var(--crit);color:${exActive==="acl"?"#fff":"var(--crit)"};${exActive==="acl"?"background:var(--crit)":""}">⚡ Show my injury</button>`;
+}
+syncChips();
+$("#exchips").addEventListener("click",e=>{
+  const b=e.target.closest("[data-ex]");if(!b)return;
+  openAnatomy(b.dataset.ex,true);
+});
+function openAnatomy(id,stay){
+  if(!stay){showPane("ptabs","p-anat")}
+  selected=null;
+  if(id==="acl"){exActive="acl";highlight=["acl"];syncChips();
+    const p=parts.find(z=>z.id==="acl");showPart(p.name,p.info,"lig");
+    return}
+  const x=exercises.find(z=>z.id===id);
+  exActive=id;highlight=[...x.muscles];syncChips();
+  const names=x.muscles.map(m=>parts.find(p=>p.id===m).name).join(" + ");
+  $("#partinfo").innerHTML=`<span class="chip status ok" style="margin-bottom:6px">${x.name} · ${x.meta}</span><h4>Works: ${names}</h4><p><b>Why:</b> ${x.why}</p>`;
+}
+
+/* ================= messages ================= */
+function renderChat(){
+  $("#chat").innerHTML=chatLog.map(m=>`<div class="msg ${m.me?"me":"them"}"><span class="who">${m.who}</span>${m.txt}</div>`).join("");
+  $("#chat").scrollTop=99999;
+}
+renderChat();
+function sendMsg(){
+  const v=$("#chatinput").value.trim();if(!v)return;
+  chatLog.push({who:"You",me:true,txt:v});$("#chatinput").value="";renderChat();
+  setTimeout(()=>{chatLog.push({who:"James (your PT)",me:false,txt:"(Demo) Got it — I'll take a look and adjust your plan if needed. 👍"});renderChat()},900);
+}
+$("#chatsend").addEventListener("click",sendMsg);
+$("#chatinput").addEventListener("keydown",e=>{if(e.key==="Enter")sendMsg()});
+
+/* ================= therapist ================= */
+$("#roster").innerHTML=roster.map(p=>`
+  <tr class="${p.click?"rowbtn":""}" ${p.click?'id="sarahrow"':""}>
+    <td><span class="pt-name">${p.n}</span><br><span class="pt-cond">${p.c}</span></td>
+    <td>Wk ${p.w}</td>
+    <td>${sparkline(p.trend,p.st==="crit"?"--crit":"--series-1")}</td>
+    <td><b>${p.pain}</b><span style="color:var(--muted)">/10</span></td>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="adhbar ${p.adh<60?"adh-low":""}"><i style="width:${p.adh}%"></i></div>${p.adh}%</div></td>
+    <td><span class="chip status ${p.st}">${p.st==="crit"?"⚠︎ ":""}${p.stTxt}</span></td>
+  </tr>`).join("");
+$("#roster").addEventListener("click",e=>{
+  const row=e.target.closest("tr");if(!row)return;
+  if(row.id==="sarahrow"){$("#sarahdetail").scrollIntoView({behavior:reduceMotion?"auto":"smooth"});toast("Opening Sarah's chart ↓")}
+  else toast("In the full app, every patient's row opens their complete chart.");
+});
+lineChart($("#tpainchart"),painData,{min:0,max:10,color:"--series-1",marks:painMilestones,xlab:dayLabel,xlabels:["Jun 1","Jun 15","Jun 29","Jul 13"]});
+
+/* ================= clinic ================= */
+barsH($("#condchart"),conditions);
+lineChart($("#adhchart"),adhClinic,{min:0,max:100,unit:"%",color:"--series-2",points:true,xlab:i=>["Feb","Mar","Apr","May","Jun","Jul"][i],xlabels:["Feb","Mar","Apr","May","Jun","Jul"]});
+
+/* report modal */
+function openReport(){$("#scrim").classList.add("open");lineChart($("#reportchart"),painData.filter((_,i)=>i%3===0),{min:0,max:10,color:"--series-1",xlab:i=>dayLabel(i*3),xlabels:["Jun 1","Jun 22","Jul 13"],w:560,h:150})}
+$("#reportbtn").addEventListener("click",openReport);
+$("#reportbtn2").addEventListener("click",openReport);
+$("#closemodal").addEventListener("click",()=>$("#scrim").classList.remove("open"));
+$("#scrim").addEventListener("click",e=>{if(e.target.id==="scrim")$("#scrim").classList.remove("open")});
+
+/* ================= navigation ================= */
+function showPane(tabsId,paneId){
+  $$("#"+tabsId+" button").forEach(b=>b.classList.toggle("on",b.dataset.pane===paneId));
+  const panes={ptabs:["p-dash","p-ex","p-anat","p-msg"]}[tabsId];
+  panes.forEach(id=>$("#"+id).classList.toggle("on",id===paneId));
+  if(paneId==="p-msg")$("#msgdot").style.display="none";
+}
+$("#ptabs").addEventListener("click",e=>{const b=e.target.closest("[data-pane]");if(b)showPane("ptabs",b.dataset.pane)});
+$$(".seg button").forEach(b=>b.addEventListener("click",()=>{
+  $$(".seg button").forEach(x=>x.classList.toggle("on",x===b));
+  ["patient","therapist","clinic"].forEach(r=>$("#view-"+r).classList.toggle("on",r===b.dataset.role));
+  window.scrollTo({top:0});
+}));
+</script>
