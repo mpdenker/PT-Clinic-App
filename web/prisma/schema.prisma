@@ -1,0 +1,260 @@
+// Stride — PT patient progress tracking platform
+// Local dev uses SQLite for zero-setup verification. For production we switch
+// the provider to "postgresql" and point DATABASE_URL at Supabase — the models
+// below port over unchanged (String status fields become Postgres enums, and we
+// layer row-level security policies on top via SQL migrations).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// Organization & people
+// ---------------------------------------------------------------------------
+
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users     User[]
+  patients  PatientProfile[]
+  exercises Exercise[]
+}
+
+/// role: "PATIENT" | "THERAPIST" | "CLINIC_ADMIN"
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String
+  clinicId  String?
+  clinic    Clinic?  @relation(fields: [clinicId], references: [id])
+  createdAt DateTime @default(now())
+
+  patientProfile   PatientProfile?
+  therapistProfile TherapistProfile?
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model TherapistProfile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  title     String  @default("PT, DPT")
+  licenseNo String?
+
+  patients     PatientProfile[]
+  appointments Appointment[]
+  measurements Measurement[]
+  assignments  ExerciseAssignment[]
+}
+
+model PatientProfile {
+  id          String            @id @default(cuid())
+  userId      String            @unique
+  user        User              @relation(fields: [userId], references: [id])
+  clinicId    String
+  clinic      Clinic            @relation(fields: [clinicId], references: [id])
+  therapistId String?
+  therapist   TherapistProfile? @relation(fields: [therapistId], references: [id])
+
+  condition   String            // e.g. "ACL reconstruction (right)"
+  bodyRegion  String   @default("knee") // drives which 3D model loads
+  surgeryDate DateTime?
+  planWeeks   Int      @default(24)
+  referringMD String?
+
+  painLogs     PainLog[]
+  symptomLogs  SymptomLog[]
+  assignments  ExerciseAssignment[]
+  measurements Measurement[]
+  milestones   Milestone[]
+  appointments Appointment[]
+  responses    QuestionnaireResponse[]
+  wearable     WearableConnection?
+  wearableDays WearableDaily[]
+}
+
+// ---------------------------------------------------------------------------
+// Patient-logged data
+// ---------------------------------------------------------------------------
+
+model PainLog {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id])
+  date       DateTime @default(now())
+  level      Int      // 0–10
+  bodyRegion String?  // from the body-map tap, e.g. "Right knee"
+  note       String?
+
+  @@index([patientId, date])
+}
+
+/// kind: "NEW" | "WORSE" | "IMPROVED"
+model SymptomLog {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id])
+  date        DateTime @default(now())
+  kind        String
+  description String
+
+  @@index([patientId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Exercises & home program
+// ---------------------------------------------------------------------------
+
+model Exercise {
+  id          String  @id @default(cuid())
+  clinicId    String?
+  clinic      Clinic? @relation(fields: [clinicId], references: [id])
+  name        String
+  description String
+  muscles     String  // comma-separated muscle ids the 3D model highlights
+  whyItHelps  String  // plain-language explanation shown to patients
+  videoUrl    String?
+
+  assignments ExerciseAssignment[]
+}
+
+model ExerciseAssignment {
+  id          String            @id @default(cuid())
+  patientId   String
+  patient     PatientProfile    @relation(fields: [patientId], references: [id])
+  exerciseId  String
+  exercise    Exercise          @relation(fields: [exerciseId], references: [id])
+  therapistId String?
+  therapist   TherapistProfile? @relation(fields: [therapistId], references: [id])
+  sets        Int      @default(3)
+  reps        String   @default("10")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  completions ExerciseCompletion[]
+}
+
+/// status: "DONE" | "SKIPPED"
+model ExerciseCompletion {
+  id           String   @id @default(cuid())
+  assignmentId String
+  assignment   ExerciseAssignment @relation(fields: [assignmentId], references: [id])
+  date         DateTime @default(now())
+  status       String
+  difficulty   Int?     // 1–5, how hard it felt
+
+  @@index([assignmentId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Clinical measurements & milestones
+// ---------------------------------------------------------------------------
+
+/// kind: "ROM" | "STRENGTH" | "FUNCTIONAL"
+model Measurement {
+  id          String            @id @default(cuid())
+  patientId   String
+  patient     PatientProfile    @relation(fields: [patientId], references: [id])
+  therapistId String?
+  therapist   TherapistProfile? @relation(fields: [therapistId], references: [id])
+  date        DateTime @default(now())
+  kind        String
+  label       String   // e.g. "Knee flexion", "Quad strength"
+  value       Float
+  unit        String   // e.g. "°", "/5"
+  note        String?
+
+  @@index([patientId, date])
+}
+
+model Milestone {
+  id         String    @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id])
+  title      String
+  detail     String?
+  order      Int       @default(0)
+  achievedAt DateTime? // null = not yet reached
+}
+
+// ---------------------------------------------------------------------------
+// Communication & scheduling
+// ---------------------------------------------------------------------------
+
+model Message {
+  id         String   @id @default(cuid())
+  fromUserId String
+  fromUser   User     @relation("SentMessages", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User     @relation("ReceivedMessages", fields: [toUserId], references: [id])
+  body       String
+  sentAt     DateTime @default(now())
+  readAt     DateTime?
+
+  @@index([toUserId, sentAt])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  patientId   String
+  patient     PatientProfile    @relation(fields: [patientId], references: [id])
+  therapistId String?
+  therapist   TherapistProfile? @relation(fields: [therapistId], references: [id])
+  startsAt    DateTime
+  note        String?
+
+  @@index([patientId, startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// Patient-reported outcome questionnaires
+// ---------------------------------------------------------------------------
+
+model QuestionnaireResponse {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id])
+  instrument  String   // e.g. "KOOS-JR" (knee outcome survey)
+  date        DateTime @default(now())
+  score       Float    // normalized 0–100
+  answersJson String   // raw answers stored as JSON
+
+  @@index([patientId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Wearables (Apple Health / Fitbit / Oura)
+// ---------------------------------------------------------------------------
+
+/// provider: "APPLE_HEALTH" | "FITBIT" | "OURA"
+model WearableConnection {
+  id          String   @id @default(cuid())
+  patientId   String   @unique
+  patient     PatientProfile @relation(fields: [patientId], references: [id])
+  provider    String
+  connectedAt DateTime @default(now())
+  lastSyncAt  DateTime?
+}
+
+model WearableDaily {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       PatientProfile @relation(fields: [patientId], references: [id])
+  date          DateTime
+  steps         Int?
+  activeMinutes Int?
+  sleepMinutes  Int?
+
+  @@unique([patientId, date])
+  @@index([patientId, date])
+}
