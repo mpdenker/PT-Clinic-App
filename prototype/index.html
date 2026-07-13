@@ -1,50 +1,16 @@
 <title>Stride — PT Recovery Prototype</title>
 <style>
+  /* Committed dark athletic theme — inspired by training-app design language */
   :root{
-    --bg:#f2f6f5; --card:#fcfdfd; --card-2:#f5f8f7;
-    --ink:#101615; --ink-2:#4b5754; --muted:#84908d;
-    --line:#e0e6e4; --line-soft:#eaefed;
-    --accent:#0e7a6e; --accent-soft:#e2f0ee; --accent-ink:#0b5d54;
-    --series-1:#2a78d6; --series-2:#1baf7a;
-    --good:#0ca30c; --good-text:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
-    --bone:#e9e3d3; --muscle:#b25c52; --muscle-hi:#ef5844; --lig:#d03b3b;
-    --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 20px rgba(16,22,21,.06);
-    --grid:#e3e8e6; --axis:#c2cac7;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#0d1110; --card:#171d1c; --card-2:#1d2422;
-      --ink:#eef3f2; --ink-2:#b4bfbc; --muted:#8b9693;
-      --line:#28302e; --line-soft:#222927;
-      --accent:#37b3a2; --accent-soft:#123531; --accent-ink:#63cfc0;
-      --series-1:#3987e5; --series-2:#199e70;
-      --good-text:#3dbb3d;
-      --bone:#d8d2c2; --muscle:#b25c52; --muscle-hi:#ff6a55;
-      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
-      --grid:#242b29; --axis:#39423f;
-    }
-  }
-  :root[data-theme="light"]{
-    --bg:#f2f6f5; --card:#fcfdfd; --card-2:#f5f8f7;
-    --ink:#101615; --ink-2:#4b5754; --muted:#84908d;
-    --line:#e0e6e4; --line-soft:#eaefed;
-    --accent:#0e7a6e; --accent-soft:#e2f0ee; --accent-ink:#0b5d54;
-    --series-1:#2a78d6; --series-2:#1baf7a;
-    --good-text:#006300;
-    --bone:#e9e3d3; --muscle:#b25c52; --muscle-hi:#ef5844;
-    --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 20px rgba(16,22,21,.06);
-    --grid:#e3e8e6; --axis:#c2cac7;
-  }
-  :root[data-theme="dark"]{
-    --bg:#0d1110; --card:#171d1c; --card-2:#1d2422;
-    --ink:#eef3f2; --ink-2:#b4bfbc; --muted:#8b9693;
-    --line:#28302e; --line-soft:#222927;
-    --accent:#37b3a2; --accent-soft:#123531; --accent-ink:#63cfc0;
+    --bg:#0a0a0c; --card:#141417; --card-2:#1c1c21;
+    --ink:#f5f5f7; --ink-2:#b9b9c1; --muted:#7e7e88;
+    --line:#26262d; --line-soft:#1e1e24;
+    --accent:#e8112d; --accent-soft:#360b13; --accent-ink:#ff6577;
     --series-1:#3987e5; --series-2:#199e70;
-    --good-text:#3dbb3d;
-    --bone:#d8d2c2; --muscle:#b25c52; --muscle-hi:#ff6a55;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
-    --grid:#242b29; --axis:#39423f;
+    --good:#0ca30c; --good-text:#35d06a; --warn:#fab219; --serious:#ec835a; --crit:#ff4257;
+    --bone:#d8d2c2; --muscle:#a85850; --muscle-hi:#ff4d3a; --lig:#ff3b4e;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    --grid:#202027; --axis:#383841;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -54,29 +20,57 @@
   button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
   /* ---------- shell ---------- */
-  .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
+  .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
     padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line)}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:-.02em;font-size:17px}
+  @media(max-width:760px){.brand .wt,.draftpill{display:none}.topbar{gap:10px}.seg button{padding:6px 10px;font-size:12.5px}}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.18em;font-size:16px;text-transform:uppercase}
   .brand svg{display:block}
-  .brand .wt{font-weight:450;color:var(--muted);font-size:12px;letter-spacing:0}
+  .brand .wt{font-weight:600;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:none}
   .seg{display:flex;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;margin-left:auto}
   .seg button{padding:6px 14px;border-radius:7px;font-weight:600;font-size:13.5px;color:var(--ink-2)}
   .seg button.on{background:var(--accent);color:#fff}
   .draftpill{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
     color:var(--accent-ink);background:var(--accent-soft);padding:4px 10px;border-radius:99px;white-space:nowrap}
   .demo-note{max-width:1160px;margin:14px auto 0;padding:0 20px;color:var(--muted);font-size:12.5px}
-  main{max-width:1160px;margin:0 auto;padding:14px 20px 80px}
+  main{max-width:1160px;margin:0 auto;padding:14px 20px 130px}
 
   /* role banner */
-  .rolebar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:14px 0 18px}
-  .rolebar h1{font-size:26px;letter-spacing:-.02em;margin:0;text-wrap:balance}
-  .rolebar .sub{color:var(--ink-2)}
+  .rolebar{display:flex;flex-direction:column;gap:3px;margin:18px 0 20px}
+  .rolebar .greet{margin:0;font-size:12px;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+  .rolebar h1{font-size:clamp(30px,5vw,44px);letter-spacing:.01em;margin:0;text-transform:uppercase;font-weight:900;line-height:1.05;text-wrap:balance}
+  .rolebar .sub{color:var(--ink-2);font-size:13.5px}
 
-  /* tabs */
-  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
-  .tabs button{padding:9px 14px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
-  .tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
-  .tabs .dot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--crit);margin-left:6px;vertical-align:2px}
+  /* bottom tab bar (patient) */
+  .bnav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:2px;
+    background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);border-radius:18px;padding:8px;box-shadow:var(--shadow);max-width:calc(100vw - 24px)}
+  .bnav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 18px;border-radius:12px;white-space:nowrap;
+    color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;position:relative}
+  @media(max-width:560px){.bnav button{padding:7px 11px}}
+  .bnav button svg{width:21px;height:21px;stroke:currentColor}
+  .bnav button.on{color:var(--ink);background:var(--card-2)}
+  .bnav button.on svg{stroke:var(--accent)}
+  .bnav .dot{position:absolute;top:6px;right:10px;width:7px;height:7px;border-radius:99px;background:var(--crit)}
+
+  /* hero score card */
+  .hero{position:relative;overflow:hidden;margin-bottom:16px;background:linear-gradient(150deg,#26262f,#141419 70%)}
+  .hero .toprow{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+  .hero-num{font-size:clamp(72px,12vw,104px);font-weight:900;line-height:1.05;letter-spacing:-.02em;position:relative;z-index:1}
+  .hero .ghost{position:absolute;right:-16px;top:4px;font-size:150px;font-weight:900;color:rgba(255,255,255,.045);letter-spacing:.02em;pointer-events:none;user-select:none;line-height:1;text-transform:uppercase}
+  .pill{border:1px solid var(--line);background:var(--card-2);border-radius:99px;padding:5px 14px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .hero-bar{height:3px;border-radius:99px;background:rgba(255,255,255,.12);margin:16px 0 10px;position:relative;z-index:1}
+  .hero-bar i{display:block;height:100%;width:25%;background:#fff;border-radius:99px}
+  .hero .sub2{color:var(--muted);font-size:13px;position:relative;z-index:1;max-width:52ch}
+
+  /* big-number stat row */
+  .statrow{display:grid;grid-template-columns:repeat(4,1fr);padding:0;overflow:hidden;margin-bottom:16px}
+  .statrow>div{padding:18px 8px;text-align:center;border-right:1px solid var(--line)}
+  .statrow>div:last-child{border-right:none}
+  .statrow b{display:block;font-size:34px;font-weight:900;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
+  .statrow small{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  @media(max-width:700px){.statrow{grid-template-columns:1fr 1fr}
+    .statrow>div:nth-child(2){border-right:none}
+    .statrow>div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
 
   /* cards & grid */
   .grid{display:grid;gap:16px}
@@ -85,26 +79,26 @@
   .g4{grid-template-columns:repeat(4,1fr)}
   @media(max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
-  .card h3{margin:0 0 2px;font-size:15.5px;letter-spacing:-.01em}
+  .card h3{margin:0 0 2px;font-size:15.5px;letter-spacing:-.01em;font-weight:800}
   .card .desc{color:var(--muted);font-size:12.5px;margin:0 0 12px}
-  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
   .stack{display:flex;flex-direction:column;gap:16px}
 
   /* stat tiles */
-  .tile .big{font-size:30px;font-weight:750;letter-spacing:-.02em;line-height:1.1}
+  .tile .big{font-size:36px;font-weight:900;letter-spacing:-.01em;line-height:1.1}
   .tile .lbl{color:var(--ink-2);font-size:13px;margin-top:2px}
   .tile .delta{font-size:12.5px;font-weight:600;margin-top:6px}
   .delta.up{color:var(--good-text)} .delta.down{color:var(--good-text)}
   .delta.flat{color:var(--muted)}
 
   /* buttons */
-  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:9px;font-weight:650;font-size:13.5px;
-    background:var(--accent);color:#fff;border:1px solid transparent}
-  .btn:hover{filter:brightness(1.07)}
-  .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 18px;border-radius:12px;font-weight:800;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.07em;background:var(--accent);color:#fff;border:1px solid transparent}
+  .btn:hover{filter:brightness(1.12)}
+  .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--axis)}
   .btn.ghost:hover{background:var(--card-2);filter:none}
-  .btn.soft{background:var(--accent-soft);color:var(--accent-ink)}
-  .btn.sm{padding:5px 11px;font-size:12.5px;border-radius:7px}
+  .btn.soft{background:var(--accent-soft);color:var(--accent-ink);border-color:#5a1220}
+  .btn.sm{padding:7px 12px;font-size:11px;border-radius:9px}
 
   /* chips */
   .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:650;border:1px solid var(--line);color:var(--ink-2);background:var(--card)}
@@ -126,7 +120,7 @@
   .dlabel{font-size:11px;font-weight:700;font-family:system-ui,sans-serif}
 
   /* check-in slider */
-  .painval{font-size:44px;font-weight:750;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .painval{font-size:56px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
   .painword{font-weight:600;color:var(--ink-2);font-size:13.5px}
   input[type=range]{width:100%;accent-color:var(--accent);margin:14px 0 4px}
   .scale-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:11.5px}
@@ -144,11 +138,10 @@
   .ex{display:grid;grid-template-columns:120px 1fr auto;gap:16px;padding:14px 0;border-bottom:1px solid var(--line-soft);align-items:center}
   .ex:last-child{border-bottom:none}
   @media(max-width:700px){.ex{grid-template-columns:1fr}}
-  .vid{position:relative;aspect-ratio:16/10;border-radius:10px;overflow:hidden;
-    background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 55%,#1a3a36),color-mix(in srgb,var(--series-1) 45%,#122));display:flex;align-items:center;justify-content:center}
-  .vid .play{width:34px;height:34px;border-radius:99px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
-  .vid .play::after{content:"";border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent #0b3f39;margin-left:3px}
-  .vid .tag{position:absolute;left:7px;bottom:6px;font-size:10px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.9);text-transform:uppercase}
+  .vid{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .vid .play{width:40px;height:40px;border-radius:99px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  .vid .play::after{content:"";border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent #fff;margin-left:3px}
+  .vid .dur{position:absolute;left:8px;bottom:7px;background:rgba(0,0,0,.65);padding:2px 9px;border-radius:7px;font-size:10px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase}
   .ex h4{margin:0;font-size:15px}
   .ex .meta{color:var(--ink-2);font-size:13px;margin:2px 0 8px}
   .ex .why{color:var(--accent-ink);font-weight:650;font-size:13px;background:none;padding:0}
@@ -222,11 +215,11 @@
   .upload:hover{border-color:var(--accent);color:var(--accent-ink)}
 
   /* clinic / report */
-  .market{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#123)); color:#fff;border:none}
+  .market{background:linear-gradient(140deg,#e8112d,#6d0715);color:#fff;border:none}
   .market .eyebrow{color:rgba(255,255,255,.75)}
-  .market .big{font-size:26px;font-weight:750;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
+  .market .big{font-size:26px;font-weight:900;letter-spacing:-.01em;line-height:1.25;text-wrap:balance}
   .market p{color:rgba(255,255,255,.85);font-size:13.5px}
-  .market .btn{background:#fff;color:#0b5d54}
+  .market .btn{background:#fff;color:#b30d22}
 
   .modal-scrim{position:fixed;inset:0;background:rgba(8,12,11,.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
   .modal-scrim.open{display:flex}
@@ -272,42 +265,54 @@
 <!-- ==================== PATIENT ==================== -->
 <section class="view on" id="view-patient">
   <div class="rolebar">
-    <h1>Good morning, Sarah</h1>
+    <p class="greet">Good morning,</p>
+    <h1>Sarah</h1>
     <span class="sub">ACL reconstruction · Week 6 of ~24 · Riverside Physical Therapy</span>
   </div>
-  <div class="tabs" id="ptabs">
-    <button class="on" data-pane="p-dash">Dashboard</button>
-    <button data-pane="p-ex">Today's exercises</button>
-    <button data-pane="p-anat">My body in 3D</button>
-    <button data-pane="p-msg">Messages<span class="dot" id="msgdot"></span></button>
-  </div>
+  <nav class="bnav" id="ptabs" aria-label="Patient navigation">
+    <button class="on" data-pane="p-dash">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      Home</button>
+    <button data-pane="p-ex">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>
+      Exercises</button>
+    <button data-pane="p-anat">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.5" r="2.2"/><path d="M12 7.5V15M12 15l-3.5 6M12 15l3.5 6M5.5 10.5 12 9l6.5 1.5"/></svg>
+      My Body</button>
+    <button data-pane="p-msg">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l1.6-3.2A8 8 0 1 1 21 12z"/></svg>
+      Messages<span class="dot" id="msgdot"></span></button>
+  </nav>
 
   <!-- dashboard -->
   <div class="tabpane on" id="p-dash">
-    <div class="grid g3" style="margin-bottom:16px">
-      <div class="card">
-        <p class="eyebrow">Daily check-in</p>
-        <h3>How's your pain right now?</h3>
-        <div style="display:flex;align-items:baseline;gap:10px;margin-top:10px">
-          <span class="painval" id="painval">3</span>
-          <span class="painword" id="painword">Mild</span>
-        </div>
-        <input type="range" id="painslider" min="0" max="10" step="1" value="3" aria-label="Pain from 0 to 10">
-        <div class="scale-ends"><span>0 · no pain</span><span>10 · worst</span></div>
-        <button class="btn" id="checkinbtn" style="margin-top:12px;width:100%;justify-content:center">Save today's check-in</button>
-        <button class="btn ghost sm" id="symptombtn" style="margin-top:8px;width:100%;justify-content:center">＋ Log a new symptom</button>
+    <div class="card hero">
+      <span class="ghost">STRIDE</span>
+      <div class="toprow"><p class="eyebrow" style="margin:0">Recovery score</p><span class="pill">On track</span></div>
+      <div class="hero-num">72</div>
+      <div class="hero-bar"><i></i></div>
+      <div class="sub2">Week 6 of ~24 · your score climbs as pain drops, motion returns and your streak grows · 80 unlocks “Strong”</div>
+    </div>
+
+    <div class="card statrow">
+      <div><b id="statPain">3</b><small>Pain today</small></div>
+      <div><b>11 🔥</b><small>Day streak</small></div>
+      <div><b>92%</b><small>This week</small></div>
+      <div><b>118°</b><small>Knee bend</small></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <p class="eyebrow">Daily check-in</p>
+      <h3>How's your pain right now?</h3>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px">
+        <span class="painval" id="painval">3</span>
+        <span class="painword" id="painword">Mild</span>
       </div>
-      <div class="card tile">
-        <p class="eyebrow">Exercise streak</p>
-        <div class="big">11 days 🔥</div>
-        <div class="lbl">You've done your home exercises 11 days in a row</div>
-        <div class="delta up">Personal best — keep it going</div>
-      </div>
-      <div class="card tile">
-        <p class="eyebrow">Knee bend (range of motion)</p>
-        <div class="big">118°</div>
-        <div class="lbl">Measured at Tuesday's appointment</div>
-        <div class="delta up">▲ 56° since surgery — next goal: 125°</div>
+      <input type="range" id="painslider" min="0" max="10" step="1" value="3" aria-label="Pain from 0 to 10">
+      <div class="scale-ends"><span>0 · no pain</span><span>10 · worst</span></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" id="checkinbtn" style="flex:2;min-width:200px">Save today's check-in</button>
+        <button class="btn ghost" id="symptombtn" style="flex:1">＋ Log symptom</button>
       </div>
     </div>
 
@@ -394,7 +399,8 @@
 <!-- ==================== THERAPIST ==================== -->
 <section class="view" id="view-therapist">
   <div class="rolebar">
-    <h1>Morning, James</h1>
+    <p class="greet">Good morning,</p>
+    <h1>James</h1>
     <span class="sub">18 active patients · 2 need your attention</span>
   </div>
 
@@ -708,6 +714,7 @@ const painWords=["No pain","Barely there","Mild","Mild","Moderate","Moderate","S
 $("#painslider").addEventListener("input",e=>{$("#painval").textContent=e.target.value;$("#painword").textContent=painWords[e.target.value]});
 $("#checkinbtn").addEventListener("click",()=>{
   painData.push(+$("#painslider").value);painData.shift();drawPain();
+  $("#statPain").textContent=$("#painslider").value;
   toast("Check-in saved — added to your progress graph ✓");
 });
 $("#symptombtn").addEventListener("click",()=>toast("In the full app: describe a new or changed symptom — your therapist is alerted if it's concerning."));
@@ -731,11 +738,12 @@ $("#quiz").addEventListener("click",e=>{
 
 /* ================= render: exercises ================= */
 ring($("#adhring"),92);
+const vidGrads=["linear-gradient(135deg,#2563eb,#4f9cf7)","linear-gradient(135deg,#15803d,#4ade80)","linear-gradient(135deg,#c2410c,#fb923c)","linear-gradient(135deg,#7c3aed,#c084fc)"];
 function renderEx(){
-  $("#exlist").innerHTML=exercises.map(x=>`
+  $("#exlist").innerHTML=exercises.map((x,i)=>`
    <div class="ex ${x.state==="done"?"done-state":""}" data-id="${x.id}">
-     <button class="vid" data-toast="In the full app this plays the demo video your therapist recorded for you.">
-       <span class="play"></span><span class="tag">▸ 0:42 · by James</span>
+     <button class="vid" style="background:${vidGrads[i%4]}" data-toast="In the full app this plays the demo video your therapist recorded for you.">
+       <span class="play"></span><span class="dur">0:42</span>
      </button>
      <div>
        <h4>${x.name}</h4>
