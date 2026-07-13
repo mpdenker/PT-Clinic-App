@@ -40,6 +40,7 @@ export function PainChart({ data }: { data: { date: string; level: number }[] })
             stroke="#2a78d6"
             strokeWidth={2}
             fill="url(#pain)"
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
