@@ -40,6 +40,7 @@ Why not a no-code tool (Bubble, Glide, etc.)? Health data + role-based access + 
 
 ### Phase 2 — The Patient MVP (the core loop)
 - **Daily pain check-in** (0–10 slider — takes 10 seconds, because if logging is a chore, patients stop).
+- **Body-map pain logging**: tap a body diagram to pinpoint exactly where it hurts — faster than typing for patients, and cleaner, chartable data for therapists.
 - **Symptom logging** (new pain / worse / better, with notes).
 - **Exercise adherence** (today's assigned exercises: done / skipped / difficulty 1–5).
 - **Patient recovery dashboard**: progress graphs of pain over time, exercise streaks, and milestone badges.
@@ -71,6 +72,7 @@ Built in two stages, because 3D is the most technically ambitious part of the ap
 ### Phase 5 — Questionnaires & Reminders
 - **Patient-reported outcome questionnaires**: standard, insurance-recognized ones (e.g., pain, function, quality-of-life scales), scheduled automatically (e.g., every 2 weeks). Why standard forms: insurers and physicians already trust them, which makes your reports credible.
 - **Appointment reminders + home-exercise reminders** via email/SMS (content-free of health details).
+- **Wearable integration (Apple Health, Fitbit, Oura)**: steps, activity and sleep sync in automatically — less manual logging for patients, and objective adherence/recovery signals for therapists.
 
 ### Phase 6 — Reports & Clinic Analytics
 - **Progress reports** (PDF): pain trend, adherence %, milestones, questionnaire scores — shareable with **referring physicians** (patient consents with one tap) and exportable for **insurance documentation**.
@@ -83,7 +85,7 @@ Built in two stages, because 3D is the most technically ambitious part of the ap
 - **Pilot with one friendly clinic**, fix what they trip over, then open up.
 
 ### Phase 8 — Later / Nice-to-Have
-- Native iOS/Android apps (only if the installable web app proves insufficient), wearable integrations, EHR integrations (Epic/Cerner), more 3D body regions and photorealistic licensed anatomy models — these are expensive; wait for real demand.
+- Native iOS/Android apps (only if the installable web app proves insufficient), EHR integrations (Epic/Cerner), more 3D body regions and photorealistic licensed anatomy models — these are expensive; wait for real demand.
 
 ---
 
