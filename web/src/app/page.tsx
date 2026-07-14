@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 
+// Must be dynamic: this page queries the database, and on a fresh deploy
+// (no database connected yet) that query should fail at request time — where
+// we can show a friendly fallback — not at build time, where it would take
+// the whole deployment down.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   // A stand-in for real login: pick whose view to open. Real authentication
   // (Supabase Auth, one account per person) is the next build step.
