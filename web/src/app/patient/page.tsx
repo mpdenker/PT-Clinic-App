@@ -7,25 +7,33 @@ import {
   getPainSeries,
   getRecoveryMetrics,
   getTodaysExercises,
+  getUnreadCount,
+  getRecentSymptoms,
+  getQuestionnaireHistory,
 } from "@/lib/queries";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import Link from "next/link";
 
 export default async function PatientPage() {
   const user = await requireUser("PATIENT");
   const patient = user.patientProfile;
   if (!patient) return <SetupNotice />;
-  const [metrics, pain, exercises, milestones, wearable] = await Promise.all([
-    getRecoveryMetrics(patient.id),
-    getPainSeries(patient.id),
-    getTodaysExercises(patient.id),
-    db.milestone.findMany({ where: { patientId: patient.id }, orderBy: { order: "asc" } }),
-    db.wearableDaily.findMany({
-      where: { patientId: patient.id },
-      orderBy: { date: "desc" },
-      take: 1,
-    }),
-  ]);
+  const [metrics, pain, exercises, milestones, wearable, unread, symptoms, surveys] =
+    await Promise.all([
+      getRecoveryMetrics(patient.id),
+      getPainSeries(patient.id),
+      getTodaysExercises(patient.id),
+      db.milestone.findMany({ where: { patientId: patient.id }, orderBy: { order: "asc" } }),
+      db.wearableDaily.findMany({
+        where: { patientId: patient.id },
+        orderBy: { date: "desc" },
+        take: 1,
+      }),
+      getUnreadCount(user.id),
+      getRecentSymptoms(patient.id, 3),
+      getQuestionnaireHistory(patient.id),
+    ]);
 
   const weeksSinceSurgery = patient.surgeryDate
     ? Math.floor((Date.now() - new Date(patient.surgeryDate).getTime()) / (7 * 864e5))
@@ -83,6 +91,77 @@ export default async function PatientPage() {
         </p>
         <ExerciseList exercises={exercises} />
       </Card>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Card>
+          <h2 className="mb-1 font-semibold">Log a symptom</h2>
+          <p className="mb-3 text-sm text-neutral-500">
+            New pain, something worse, or something better — your therapist sees it instantly.
+          </p>
+          <form method="POST" action="/api/symptoms" className="flex flex-col gap-2">
+            <select name="kind" className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm">
+              <option value="NEW">New symptom</option>
+              <option value="WORSE">Getting worse</option>
+              <option value="IMPROVED">Getting better</option>
+            </select>
+            <input
+              name="description" required maxLength={500}
+              placeholder="Describe it — e.g. sharp pain on stairs"
+              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            />
+            <button className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">
+              Log symptom
+            </button>
+          </form>
+          {symptoms.length > 0 && (
+            <ul className="mt-3 space-y-1 border-t border-neutral-100 pt-3">
+              {symptoms.map((s) => (
+                <li key={s.id} className="text-sm text-neutral-600">
+                  <span className={`mr-1.5 text-xs font-semibold ${
+                    s.kind === "IMPROVED" ? "text-green-700" : s.kind === "WORSE" ? "text-red-700" : "text-amber-700"
+                  }`}>
+                    {s.kind === "IMPROVED" ? "▲ Better" : s.kind === "WORSE" ? "▼ Worse" : "● New"}
+                  </span>
+                  {s.description}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Link href="/patient/messages" className="block">
+            <Card className="transition hover:border-teal-400">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold">Messages</h2>
+                  <p className="text-sm text-neutral-500">Secure chat with your therapist</p>
+                </div>
+                {unread > 0 && (
+                  <span className="rounded-full bg-rose-500 px-2.5 py-0.5 text-sm font-semibold text-white">
+                    {unread}
+                  </span>
+                )}
+              </div>
+            </Card>
+          </Link>
+          <Link href="/patient/questionnaire" className="block">
+            <Card className="transition hover:border-teal-400">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold">Knee outcome survey</h2>
+                  <p className="text-sm text-neutral-500">
+                    {surveys[0]
+                      ? `Last score: ${Math.round(surveys[0].score)}/100`
+                      : "Not taken yet — takes 2 minutes"}
+                  </p>
+                </div>
+                <span className="text-teal-700">→</span>
+              </div>
+            </Card>
+          </Link>
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card>

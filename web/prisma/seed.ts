@@ -325,6 +325,16 @@ async function main() {
       include: { patientProfile: true },
     });
     const pid = u.patientProfile!.id;
+    if (r.name === "Marcus Webb") {
+      await db.symptomLog.create({
+        data: {
+          patientId: pid,
+          date: daysAgo(1),
+          kind: "WORSE",
+          description: "Sharp pain when reaching overhead, worse since the new band exercises",
+        },
+      });
+    }
     // 6 weekly pain points.
     for (let w = 0; w < r.pains.length; w++) {
       await db.painLog.create({

@@ -104,6 +104,7 @@ export async function getRosterForTherapist(therapistId: string) {
     const painNow = p.painLogs[0]?.level ?? null;
     return {
       id: p.id,
+      userId: p.userId,
       name: p.user.name,
       condition: p.condition,
       painNow,
@@ -129,4 +130,67 @@ function startOfToday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+// ---------------------------------------------------------------------------
+// Messaging
+// ---------------------------------------------------------------------------
+
+/** Full two-way thread between two users, oldest first. */
+export async function getThread(myUserId: string, otherUserId: string) {
+  return db.message.findMany({
+    where: {
+      OR: [
+        { fromUserId: myUserId, toUserId: otherUserId },
+        { fromUserId: otherUserId, toUserId: myUserId },
+      ],
+    },
+    orderBy: { sentAt: "asc" },
+    include: { fromUser: { select: { name: true } } },
+  });
+}
+
+export async function getUnreadCount(userId: string, fromUserId?: string) {
+  return db.message.count({
+    where: { toUserId: userId, readAt: null, ...(fromUserId ? { fromUserId } : {}) },
+  });
+}
+
+export async function markThreadRead(myUserId: string, fromUserId: string) {
+  await db.message.updateMany({
+    where: { toUserId: myUserId, fromUserId, readAt: null },
+    data: { readAt: new Date() },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Symptoms & questionnaires
+// ---------------------------------------------------------------------------
+
+export async function getRecentSymptoms(patientId: string, take = 5) {
+  return db.symptomLog.findMany({
+    where: { patientId },
+    orderBy: { date: "desc" },
+    take,
+  });
+}
+
+/** Concerning symptoms (new or worsening) across a therapist's roster, last 7 days. */
+export async function getConcerningSymptoms(therapistId: string) {
+  return db.symptomLog.findMany({
+    where: {
+      patient: { therapistId },
+      kind: { in: ["NEW", "WORSE"] },
+      date: { gte: new Date(Date.now() - 7 * DAY) },
+    },
+    orderBy: { date: "desc" },
+    include: { patient: { include: { user: { select: { name: true } } } } },
+  });
+}
+
+export async function getQuestionnaireHistory(patientId: string) {
+  return db.questionnaireResponse.findMany({
+    where: { patientId },
+    orderBy: { date: "desc" },
+  });
 }
