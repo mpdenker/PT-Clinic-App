@@ -37,6 +37,23 @@ export function PageHeader({ title, sub, back }: { title: string; sub?: string; 
   );
 }
 
+export function SetupNotice() {
+  return (
+    <main className="mx-auto flex max-w-xl flex-1 flex-col justify-center px-6 py-16">
+      <Card>
+        <div className="text-xs font-medium uppercase tracking-widest text-teal-700">Stride</div>
+        <h1 className="mt-1 text-xl font-semibold">Almost there — the cloud database isn&apos;t connected yet</h1>
+        <p className="mt-2 text-sm text-neutral-600">
+          The app deployed successfully, but it has no database to read from in this
+          environment. This is the expected next setup step: create a Postgres database
+          in the Vercel dashboard (Storage tab) and redeploy. Demo data loads automatically
+          after that.
+        </p>
+      </Card>
+    </main>
+  );
+}
+
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "crit" }) {
   const tones = {
     neutral: "bg-neutral-100 text-neutral-700",

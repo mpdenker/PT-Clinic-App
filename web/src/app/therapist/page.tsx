@@ -1,11 +1,16 @@
 export const dynamic = "force-dynamic";
-import { Badge, Card, PageHeader } from "@/components/ui";
+import { Badge, Card, PageHeader, SetupNotice } from "@/components/ui";
 import { getRosterForTherapist } from "@/lib/queries";
 import { db } from "@/lib/db";
 
 export default async function TherapistPage() {
-  const therapist = await db.therapistProfile.findFirst({ include: { user: true } });
-  if (!therapist) return <main className="p-8">No therapist seeded.</main>;
+  let therapist;
+  try {
+    therapist = await db.therapistProfile.findFirst({ include: { user: true } });
+  } catch {
+    return <SetupNotice />;
+  }
+  if (!therapist) return <SetupNotice />;
 
   const roster = await getRosterForTherapist(therapist.id);
 

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 export default async function Home() {
   // A stand-in for real login: pick whose view to open. Real authentication
   // (Supabase Auth, one account per person) is the next build step.
-  const clinic = await db.clinic.findFirst();
+  const clinic = await db.clinic.findFirst().catch(() => null);
 
   const roles = [
     { href: "/patient", title: "Patient", who: "Sarah Mitchell", desc: "Log pain, do exercises, see progress" },

@@ -1,11 +1,16 @@
 export const dynamic = "force-dynamic";
-import { Card, PageHeader, StatTile } from "@/components/ui";
+import { Card, PageHeader, SetupNotice, StatTile } from "@/components/ui";
 import { getClinicStats } from "@/lib/queries";
 import { db } from "@/lib/db";
 
 export default async function ClinicPage() {
-  const clinic = await db.clinic.findFirst();
-  if (!clinic) return <main className="p-8">No clinic seeded.</main>;
+  let clinic;
+  try {
+    clinic = await db.clinic.findFirst();
+  } catch {
+    return <SetupNotice />;
+  }
+  if (!clinic) return <SetupNotice />;
 
   const stats = await getClinicStats(clinic.id);
 

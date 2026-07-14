@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { Card, PageHeader, StatTile } from "@/components/ui";
+import { Card, PageHeader, SetupNotice, StatTile } from "@/components/ui";
 import { PainChart } from "@/components/PainChart";
 import { CheckinForm } from "@/components/CheckinForm";
 import { ExerciseList } from "@/components/ExerciseList";
@@ -12,7 +12,12 @@ import {
 import { db } from "@/lib/db";
 
 export default async function PatientPage() {
-  const { user, patient } = await getDemoPatient();
+  let user, patient;
+  try {
+    ({ user, patient } = await getDemoPatient());
+  } catch {
+    return <SetupNotice />;
+  }
   const [metrics, pain, exercises, milestones, wearable] = await Promise.all([
     getRecoveryMetrics(patient.id),
     getPainSeries(patient.id),
