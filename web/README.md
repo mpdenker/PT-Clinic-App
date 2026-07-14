@@ -22,7 +22,10 @@ npm run db:setup          # creates the database and loads demo data
 npm run dev               # http://localhost:3000
 ```
 
-Open http://localhost:3000 and pick a role (Patient / Therapist / Clinic).
+Open http://localhost:3000 — you'll land on the sign-in page. Demo accounts
+(all with password `demo1234`): `sarah@example.com` (patient),
+`james@riverside.example` (therapist), `admin@riverside.example` (clinic admin) —
+or use the one-click demo buttons under the form.
 
 ## What works today (Phase 1)
 
@@ -31,6 +34,10 @@ Open http://localhost:3000 and pick a role (Patient / Therapist / Clinic).
   messages, appointments, questionnaires, wearables). See `prisma/schema.prisma`.
 - Seeded demo world (Sarah's ACL recovery, therapist James, Riverside clinic,
   a patient roster). See `prisma/seed.ts`.
+- **Real authentication**: email + password sign-in (scrypt hashing, signed
+  HttpOnly session cookies), role-based routing (patient/therapist/admin see
+  only their own views), ownership checks inside every server action, logout.
+  See `src/lib/auth.ts`.
 - **Patient** dashboard: recovery score, stat tiles, pain-trend chart, daily
   check-in with body-region **(writes to the database)**, today's exercises with
   mark done/skip + difficulty **(writes to the database)**, milestones, wearable summary.
@@ -40,7 +47,7 @@ Open http://localhost:3000 and pick a role (Patient / Therapist / Clinic).
 
 ## Not built yet (next steps)
 
-- Real authentication and per-user accounts (currently a role picker stands in)
+- Patient self-signup / invites (accounts are seeded for now)
 - Secure messaging UI, the interactive 3D anatomy view, PDF reports
 - Move to Supabase (Postgres + Auth + Storage) with row-level security
 - The polished visual design

@@ -4,20 +4,17 @@ import { PainChart } from "@/components/PainChart";
 import { CheckinForm } from "@/components/CheckinForm";
 import { ExerciseList } from "@/components/ExerciseList";
 import {
-  getDemoPatient,
   getPainSeries,
   getRecoveryMetrics,
   getTodaysExercises,
 } from "@/lib/queries";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export default async function PatientPage() {
-  let user, patient;
-  try {
-    ({ user, patient } = await getDemoPatient());
-  } catch {
-    return <SetupNotice />;
-  }
+  const user = await requireUser("PATIENT");
+  const patient = user.patientProfile;
+  if (!patient) return <SetupNotice />;
   const [metrics, pain, exercises, milestones, wearable] = await Promise.all([
     getRecoveryMetrics(patient.id),
     getPainSeries(patient.id),
@@ -39,7 +36,7 @@ export default async function PatientPage() {
       <PageHeader
         title={`Good morning, ${user.name.split(" ")[0]}`}
         sub={`${patient.condition} · ${weeksSinceSurgery !== null ? `Week ${weeksSinceSurgery} of ~${patient.planWeeks}` : ""}`}
-        back
+        logout
       />
 
       <Card className="mb-4">

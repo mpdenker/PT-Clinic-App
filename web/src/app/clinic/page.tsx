@@ -2,21 +2,20 @@ export const dynamic = "force-dynamic";
 import { Card, PageHeader, SetupNotice, StatTile } from "@/components/ui";
 import { getClinicStats } from "@/lib/queries";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export default async function ClinicPage() {
-  let clinic;
-  try {
-    clinic = await db.clinic.findFirst();
-  } catch {
-    return <SetupNotice />;
-  }
+  const user = await requireUser("CLINIC_ADMIN");
+  const clinic = user.clinicId
+    ? await db.clinic.findUnique({ where: { id: user.clinicId } })
+    : null;
   if (!clinic) return <SetupNotice />;
 
   const stats = await getClinicStats(clinic.id);
 
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-8">
-      <PageHeader title={clinic.name} sub="Clinic overview · all patients" back />
+      <PageHeader title={clinic.name} sub="Clinic overview · all patients" logout />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatTile label="Active patients" value={stats.patientCount} />

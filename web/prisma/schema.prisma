@@ -29,13 +29,14 @@ model Clinic {
 
 /// role: "PATIENT" | "THERAPIST" | "CLINIC_ADMIN"
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      String
-  clinicId  String?
-  clinic    Clinic?  @relation(fields: [clinicId], references: [id])
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String
+  passwordHash String?  // scrypt salt:hash; null = account not yet activated
+  clinicId     String?
+  clinic       Clinic?  @relation(fields: [clinicId], references: [id])
+  createdAt    DateTime @default(now())
 
   patientProfile   PatientProfile?
   therapistProfile TherapistProfile?

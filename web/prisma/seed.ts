@@ -1,8 +1,17 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { randomBytes, scryptSync } from "crypto";
 
 const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
 const db = new PrismaClient({ adapter });
+
+// Same format as src/lib/auth.ts hashPassword (salt:hash).
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
+}
+// Every demo account logs in with this password.
+const DEMO_PASSWORD_HASH = hashPassword("demo1234");
 
 const DAY = 24 * 60 * 60 * 1000;
 // Anchor everything to a fixed "today" so the demo is stable and reproducible.
@@ -40,6 +49,7 @@ async function main() {
       email: "james@riverside.example",
       name: "James Okafor",
       role: "THERAPIST",
+      passwordHash: DEMO_PASSWORD_HASH,
       clinicId: clinic.id,
       therapistProfile: { create: { title: "PT, DPT", licenseNo: "PT-48211" } },
     },
@@ -53,6 +63,7 @@ async function main() {
       email: "admin@riverside.example",
       name: "Riverside Admin",
       role: "CLINIC_ADMIN",
+      passwordHash: DEMO_PASSWORD_HASH,
       clinicId: clinic.id,
     },
   });
@@ -101,6 +112,7 @@ async function main() {
       email: "sarah@example.com",
       name: "Sarah Mitchell",
       role: "PATIENT",
+      passwordHash: DEMO_PASSWORD_HASH,
       clinicId: clinic.id,
       patientProfile: {
         create: {
@@ -298,6 +310,7 @@ async function main() {
         email: r.email,
         name: r.name,
         role: "PATIENT",
+        passwordHash: DEMO_PASSWORD_HASH,
         clinicId: clinic.id,
         patientProfile: {
           create: {

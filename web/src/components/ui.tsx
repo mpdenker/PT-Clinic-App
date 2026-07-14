@@ -23,16 +23,20 @@ export function StatTile({ label, value, sub }: { label: string; value: ReactNod
   );
 }
 
-export function PageHeader({ title, sub, back }: { title: string; sub?: string; back?: boolean }) {
+export function PageHeader({ title, sub, logout }: { title: string; sub?: string; logout?: boolean }) {
   return (
-    <header className="mb-6">
-      {back && (
-        <Link href="/" className="text-sm text-teal-700 hover:underline">
-          ← Switch role
-        </Link>
+    <header className="mb-6 flex items-start justify-between gap-4">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {sub && <p className="text-sm text-neutral-500">{sub}</p>}
+      </div>
+      {logout && (
+        <form method="POST" action="/api/logout">
+          <button className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-neutral-400">
+            Sign out
+          </button>
+        </form>
       )}
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
-      {sub && <p className="text-sm text-neutral-500">{sub}</p>}
     </header>
   );
 }

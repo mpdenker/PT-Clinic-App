@@ -1,15 +1,11 @@
 export const dynamic = "force-dynamic";
 import { Badge, Card, PageHeader, SetupNotice } from "@/components/ui";
 import { getRosterForTherapist } from "@/lib/queries";
-import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export default async function TherapistPage() {
-  let therapist;
-  try {
-    therapist = await db.therapistProfile.findFirst({ include: { user: true } });
-  } catch {
-    return <SetupNotice />;
-  }
+  const user = await requireUser("THERAPIST");
+  const therapist = user.therapistProfile;
   if (!therapist) return <SetupNotice />;
 
   const roster = await getRosterForTherapist(therapist.id);
@@ -25,9 +21,9 @@ export default async function TherapistPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-8">
       <PageHeader
-        title={`Good morning, ${therapist.user.name.split(" ")[0]}`}
+        title={`Good morning, ${user.name.split(" ")[0]}`}
         sub={`${roster.length} active patients · ${needAttention.length} need attention`}
-        back
+        logout
       />
 
       {needAttention.length > 0 && (

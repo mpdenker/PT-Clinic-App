@@ -2,17 +2,6 @@ import { db } from "@/lib/db";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-/** The demo patient (Sarah). Real auth arrives in the next step; for now we
- *  load the seeded patient so every screen renders against real DB data. */
-export async function getDemoPatient() {
-  const user = await db.user.findUnique({
-    where: { email: "sarah@example.com" },
-    include: { patientProfile: true },
-  });
-  if (!user?.patientProfile) throw new Error("Demo patient not seeded");
-  return { user, patient: user.patientProfile };
-}
-
 export type RecoveryMetrics = {
   score: number;
   painToday: number | null;
